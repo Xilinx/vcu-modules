@@ -1,0 +1,269 @@
+/*
+ * al_enc.c userspace interface and probe / remove of the driver
+ *
+ * Copyright (C) 2016, Sebastien Alaiwan (sebastien.alaiwan@allegrodvt.com)
+ * Copyright (C) 2016, Kevin Grandemange (kevin.grandemange@allegrodvt.com)
+ * Copyright (C) 2016, Antoine Gruzelle (antoine.gruzelle@allegrodvt.com)
+ * Copyright (C) 2016, Allegro DVT (www.allegrodvt.com)
+ *
+ * This program is free software; you can redistribute it and/or modify it
+ * under the terms of the GNU General Public License version 2 as published by
+ * the Free Software Foundation.
+ *
+ * This program is distributed in the hope that it will be useful, but WITHOUT
+ * ANY WARRANTY; without even the implied warranty of MERCHANTABILITY or
+ * FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License for
+ * more details.
+ *
+ * You should have received a copy of the GNU General Public License along with
+ * this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+#include <linux/io.h>
+#include <linux/uaccess.h>
+
+#include <linux/cdev.h>
+#include <linux/debugfs.h>
+#include <linux/delay.h>
+#include <linux/device.h>
+#include <linux/dma-mapping.h>
+#include <linux/err.h>
+#include <linux/fcntl.h>
+#include <linux/firmware.h>
+#include <linux/fs.h>
+#include <linux/init.h>
+#include <linux/interrupt.h>
+#include <linux/kernel.h>
+#include <linux/mm.h>
+#include <linux/module.h>
+#include <linux/moduleparam.h>
+#include <linux/of.h>
+#include <linux/of_address.h>
+#include <linux/of_irq.h>
+#include <linux/of_platform.h>
+#include <linux/platform_device.h>
+#include <linux/sched.h>
+#include <linux/signal.h>
+#include <linux/slab.h>
+#include <linux/stddef.h>
+#include <linux/vmalloc.h>
+
+#include "al_enc_ioctl.h"
+#include "al_vcu.h"
+#include "al_alloc.h"
+#include "al_user.h"
+#include "enc_user.h"
+#include "al_test.h"
+#include "al_char.h"
+
+#include "mcu_interface.h"
+#include "al_mail.h"
+#include "enc_mails_factory.h"
+
+#define AL5E_FIRMWARE "al5e.fw"
+#define AL5E_BOOTLOADER_FIRMWARE "al5e_b.fw"
+
+int max_users_nb = MAX_USERS_NB;
+static int al5e_codec_major;
+static int al5e_codec_minor;
+static int al5e_codec_nr_devs = AL5_NR_DEVS;
+
+static int ioctl_usage(struct al5_user *user, unsigned int cmd)
+{
+	pr_err("Unknown ioctl: 0x%.8X\n", cmd);
+	pr_err("Known ioctl are:\n");
+	pr_err("AL_MCU_CONFIG_CHANNEL:%.8lX\n",
+		(unsigned long)AL_MCU_CONFIG_CHANNEL);
+	pr_err("AL_MCU_DESTROY_CHANNEL:%.8lX\n",
+		(unsigned long)AL_MCU_DESTROY_CHANNEL);
+	pr_err("AL_MCU_ENCODE_ONE_FRM:%.8lX\n",
+		(unsigned long)AL_MCU_ENCODE_ONE_FRM);
+	pr_err("AL_MCU_WAIT_FOR_STATUS:%.8lX\n",
+		(unsigned long)AL_MCU_WAIT_FOR_STATUS);
+	pr_err("GET_DMA_FD:%.8lX\n",
+		(unsigned long)GET_DMA_FD);
+
+	return -EINVAL;
+}
+
+static long al5e_ioctl(struct file *filp, unsigned int cmd,
+				unsigned long arg)
+{
+	struct al5_filp_data *filp_data = filp->private_data;
+	struct al5_user *user = filp_data->user;
+	struct al5_codec_desc *codec = filp_data->codec;
+	long ret;
+
+	switch (cmd) {
+		struct al5_channel_param channel_param;
+		struct al5_pic_status pic_status;
+		struct al5_encode_msg encode_msg;
+	case AL_MCU_CONFIG_CHANNEL:
+		ioctl_info("ioctl AL_MCU_CONFIG_CHANNEL from user %i", user->uid);
+		if (copy_from_user(&channel_param, (void*)arg, sizeof(channel_param)))
+			return -EFAULT;
+		ret = al5e_user_create_channel(user, &channel_param);
+		if (copy_to_user((void*)arg, &channel_param, sizeof(channel_param)))
+			return -EFAULT;
+		ioctl_info("end AL_MCU_CONFIG_CHANNEL for user %i", user->uid);
+		return ret;
+
+	case AL_MCU_DESTROY_CHANNEL:
+		ioctl_info("ioctl AL_MCU_DESTROY_CHANNEL from user %i", user->uid);
+		ret = al5_user_destroy_channel(user, false);
+		ioctl_info("end AL_MCU_DESTROY_CHANNEL for user %i", user->uid);
+		return ret;
+
+	case AL_MCU_WAIT_FOR_STATUS:
+		ioctl_info("ioctl AL_MCU_WAIT_FOR_STATUS from user %i", user->uid);
+		if (copy_from_user(&pic_status, (void*)arg, sizeof(pic_status)))
+			return -EFAULT;
+		ret = al5e_user_wait_for_status(user, &pic_status);
+		if (copy_to_user((void*)arg, &pic_status, sizeof(pic_status)))
+			return -EFAULT;
+		ioctl_info("end AL_MCU_WAIT_FOR_STATUS for user %i", user->uid);
+		return ret;
+
+	case AL_MCU_ENCODE_ONE_FRM:
+		ioctl_info("ioctl AL_MCU_ENCODE_ONE_FRM from user %i", user->uid);
+		if (copy_from_user(&encode_msg, (void*)arg, sizeof(encode_msg)))
+			return -EFAULT;
+		ret = al5e_user_encode_one_frame(user, &encode_msg);
+		if (copy_to_user((void*)arg, &encode_msg, sizeof(encode_msg)))
+			return -EFAULT;
+		ioctl_info("end AL_MCU_ENCODE_ONE_FRM for user %i", user->uid);
+		return ret;
+
+	case GET_DMA_FD:
+		ret = al5_get_dma_fd(codec->device, arg);
+		return ret;
+
+	case GET_DMA_PHY:
+		ret = al5_get_dmabuf_dma_addr(codec->device, arg);
+		return ret;
+
+		/* NSFProd */
+	case AL_MCU_SET_TIMER_BUFFER:
+		ioctl_info("ioctl AL_MCU_SET_TIMER_BUFFER from user %i", user->uid);
+		if (!al5_chan_is_created(user))
+			return -EPERM;
+		ret = al5_set_timer_buffer(codec, user, arg);
+		ioctl_info("end AL_MCU_SET_TIMER_BUFFER for user %i", user->uid);
+		return ret;
+
+		/* NSFProd */
+	case MAIL_TESTS:
+		return al5_mail_tests(user, arg);
+
+	default:
+		return ioctl_usage(user, cmd);
+	}
+
+	return 0;
+}
+
+static const struct file_operations al5e_fops = {
+	.owner = THIS_MODULE,
+	.open = al5_codec_open,
+	.release = al5_codec_release,
+	.unlocked_ioctl = al5e_ioctl,
+	.compat_ioctl = al5_codec_compat_ioctl,
+};
+
+static int al5e_setup_codec_cdev(struct al5_codec_desc *codec, int index)
+{
+	return al5_setup_codec_cdev(codec, &al5e_fops, THIS_MODULE,
+				    al5e_codec_major, al5e_codec_minor + index);
+}
+
+static int al5e_probe(struct platform_device *pdev)
+{
+	int err;
+	static int index;
+
+	struct al5_codec_desc *codec;
+	codec = devm_kzalloc(&pdev->dev,
+			     sizeof(struct al5_codec_desc),
+			     GFP_KERNEL);
+	if (codec == NULL)
+		return -ENOMEM;
+
+	err = al5_codec_set_up(codec, pdev, max_users_nb);
+	if (err) {
+		pr_err("Failed to setup codec");
+		return err;
+	}
+	err = al5_codec_set_firmware(codec, AL5E_FIRMWARE, AL5E_BOOTLOADER_FIRMWARE);
+	if (err) {
+		pr_err("Failed to setup firmware");
+		al5_codec_tear_down(codec);
+		return err;
+	}
+	err = al5e_setup_codec_cdev(codec, index);
+	if (err) {
+		pr_err("Failed to setup cdev");
+		al5_codec_tear_down(codec);
+		return err;
+	}
+	++index;
+
+	return 0;
+}
+
+static int al5e_remove(struct platform_device *pdev)
+{
+	struct al5_codec_desc *codec = platform_get_drvdata(pdev);
+
+	al5_codec_tear_down(codec);
+	al5_clean_up_codec_cdev(codec);
+
+	return 0;
+}
+
+static const struct of_device_id al5e_of_match[] = {
+	{.compatible = "al,al5e"},
+	{ /* sentinel */ },
+};
+
+MODULE_DEVICE_TABLE(of, al5e_of_match);
+
+static struct platform_driver al5e_platform_driver = {
+	.probe = al5e_probe,
+	.remove = al5e_remove,
+	.driver =	{
+		.name = "al5e",
+		.of_match_table = of_match_ptr(al5e_of_match),
+	},
+};
+
+static int setup_chrdev_region(void)
+{
+	return al5_setup_chrdev_region(&al5e_codec_major, al5e_codec_minor,
+				     al5e_codec_nr_devs, "al5e");
+}
+
+static int __init al5e_init(void)
+{
+	int err;
+
+	err = setup_chrdev_region();
+	if (err)
+		return err;
+	return platform_driver_register(&al5e_platform_driver);
+}
+
+static void __exit al5e_exit(void)
+{
+	dev_t devno = MKDEV(al5e_codec_major, al5e_codec_minor);
+
+	unregister_chrdev_region(devno, al5e_codec_nr_devs);
+	platform_driver_unregister(&al5e_platform_driver);
+}
+
+module_init(al5e_init);
+module_exit(al5e_exit);
+MODULE_LICENSE("GPL v2");
+MODULE_AUTHOR("Kevin Grandemange");
+MODULE_AUTHOR("Sebastien Alaiwan");
+MODULE_AUTHOR("Antoine Gruzelle");
+MODULE_DESCRIPTION("Allegro Codec Driver");
