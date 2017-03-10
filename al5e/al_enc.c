@@ -67,6 +67,7 @@ int max_users_nb = MAX_USERS_NB;
 static int al5e_codec_major;
 static int al5e_codec_minor;
 static int al5e_codec_nr_devs = AL5_NR_DEVS;
+static struct class *module_class;
 
 static int ioctl_usage(struct al5_user *user, unsigned int cmd)
 {
@@ -172,8 +173,22 @@ static const struct file_operations al5e_fops = {
 
 static int al5e_setup_codec_cdev(struct al5_codec_desc *codec, int index)
 {
-	return al5_setup_codec_cdev(codec, &al5e_fops, THIS_MODULE,
+        struct device *device;
+        dev_t dev = MKDEV(al5e_codec_major, al5e_codec_minor);
+
+	int err = al5_setup_codec_cdev(codec, &al5e_fops, THIS_MODULE,
 				    al5e_codec_major, al5e_codec_minor + index);
+        if (err)
+                return err;
+
+        device = device_create(module_class, NULL, dev, NULL, "allegroIP");
+        if (IS_ERR(device)) {
+                pr_err("device not created\n");
+                al5_clean_up_codec_cdev(codec);
+                return PTR_ERR(device);
+        }
+
+        return 0;
 }
 
 static int al5e_probe(struct platform_device *pdev)
@@ -213,8 +228,10 @@ static int al5e_probe(struct platform_device *pdev)
 static int al5e_remove(struct platform_device *pdev)
 {
 	struct al5_codec_desc *codec = platform_get_drvdata(pdev);
+        dev_t dev = MKDEV(al5e_codec_major, al5e_codec_minor);
 
 	al5_codec_tear_down(codec);
+        device_destroy(module_class, dev);
 	al5_clean_up_codec_cdev(codec);
 
 	return 0;
@@ -242,6 +259,20 @@ static int setup_chrdev_region(void)
 				     al5e_codec_nr_devs, "al5e");
 }
 
+static int create_module_class(void)
+{
+        module_class = class_create(THIS_MODULE, "allegro_encode_class");
+        if (IS_ERR(module_class))
+                return PTR_ERR(module_class);
+
+        return 0;
+}
+
+static void destroy_module_class(void)
+{
+        class_destroy(module_class);
+}
+
 static int __init al5e_init(void)
 {
 	int err;
@@ -249,15 +280,20 @@ static int __init al5e_init(void)
 	err = setup_chrdev_region();
 	if (err)
 		return err;
+
+        err = create_module_class();
+        if (err)
+                return err;
+
 	return platform_driver_register(&al5e_platform_driver);
 }
 
 static void __exit al5e_exit(void)
 {
 	dev_t devno = MKDEV(al5e_codec_major, al5e_codec_minor);
-
-	unregister_chrdev_region(devno, al5e_codec_nr_devs);
 	platform_driver_unregister(&al5e_platform_driver);
+	destroy_module_class();
+	unregister_chrdev_region(devno, al5e_codec_nr_devs);
 }
 
 module_init(al5e_init);
