@@ -254,7 +254,7 @@ static int al5d_codec_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id al5d_codec_of_match[] = {
-	{.compatible = "al,al5d"},
+	{.compatible = "al,al5d-1.0"},
 	{ /* sentinel */ },
 };
 

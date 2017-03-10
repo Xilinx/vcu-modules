@@ -221,7 +221,7 @@ static int al5e_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id al5e_of_match[] = {
-	{.compatible = "al,al5e"},
+	{.compatible = "al,al5e-1.0"},
 	{ /* sentinel */ },
 };
 
