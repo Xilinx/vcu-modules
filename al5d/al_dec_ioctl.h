@@ -164,6 +164,7 @@ struct al5_pic_status
 	__u32 bandwidth;
 	__u32 crc;
 	__u32 conceal;
+	__u32 bhanged;
 } __aligned (4);
 
 struct al5_decode_msg
