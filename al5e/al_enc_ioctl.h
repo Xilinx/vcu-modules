@@ -57,6 +57,7 @@ struct al5_channel_status
 	__u32 options;
 	__u8 num_core;
 	__u32 pps_param;
+	__u32 error_code;
 };
 
 struct al5_config_channel

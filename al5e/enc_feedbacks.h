@@ -19,6 +19,7 @@ struct al5e_feedback_channel
 	u32 num_core;
 	u32 pps_param;
 	struct al5_channel_buffers buffers_needed;
+	u32 error_code;
 };
 
 #endif

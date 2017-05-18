@@ -35,6 +35,7 @@ static void update_chan_param(struct al5_channel_status *status, struct al5e_fee
 	status->options = message->options;
 	status->num_core = (u8) message->num_core;
 	status->pps_param = message->pps_param;
+	status->error_code = message->error_code;
 }
 
 static int check_and_affect_chan_uid(struct al5_user * user, u32 chan_uid)
@@ -117,14 +118,13 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_channel_param *pa
 
 	fb_message = *(struct al5e_feedback_channel*) al5_mail_get_body(feedback);
 	al5_free_mail(feedback);
+	update_chan_param(status, &fb_message);
 
 	err = check_and_affect_chan_uid(user, fb_message.chan_uid);
 	if(err) {
 		pr_err("VCU failed to create channel, wrong configuration or the ressources are not available at the moment\n");
 		goto fail;
 	}
-
-	update_chan_param(status, &fb_message);
 
 	err = allocate_channel_buffers(user, fb_message.buffers_needed);
 	if (err)
