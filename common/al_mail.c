@@ -25,20 +25,18 @@
 #include "al_mail.h"
 #include "al_mail_private.h"
 
-struct al5_mail *al5_mail_create(u32 msg_uid, u32 size)
+struct al5_mail *al5_mail_create(u32 msg_uid, u32 content_size)
 {
-	struct al5_mail *mail = kmalloc(sizeof(*mail), GFP_KERNEL);
+	// body should be aligned 32 bits
+	const size_t mail_size = roundup(sizeof(struct al5_mail), 4);
+	struct al5_mail *mail = kmalloc(mail_size + content_size, GFP_KERNEL);
 	if (!mail) {
 		return NULL;
 	}
 	mail->body_offset = 0;
 	mail->msg_uid = msg_uid;
-	mail->body_size = size;
-	mail->body = kmalloc(size, GFP_KERNEL);
-	if (!mail->body) {
-		kfree(mail);
-		return NULL;
-	}
+	mail->body_size = content_size;
+	mail->body = (u8 *)mail + mail_size;
 
 	return mail;
 }
@@ -60,7 +58,6 @@ EXPORT_SYMBOL_GPL(al5_mail_write_word);
 void al5_free_mail(struct al5_mail *mail)
 {
 	if (mail != NULL) {
-		kfree(mail->body);
 		kfree(mail);
 	}
 }
