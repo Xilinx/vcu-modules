@@ -31,10 +31,12 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 
+#include "al_group.h"
 #include "mcu_interface.h"
 #include "al_alloc.h"
 #include "al_user.h"
 #include "al_vcu.h"
+#include "al_traces.h"
 
 #define al5_writel(val,reg) iowrite32(val, codec->regs + reg)
 #define al5_readl(reg) ioread32(codec->regs + reg)
@@ -52,48 +54,6 @@
         do {                                                         \
                 dev_err(codec->device, format, ##__VA_ARGS__); \
         } while (0)
-
-#define AL5_DEBUG 0
-#if AL5_DEBUG
-#define mails_info(format, ...) \
-	do {	\
-		pr_info("\e[0;32m"); \
-		pr_cont(format, ##__VA_ARGS__); \
-		pr_cont("\e[0m\n"); \
-	} while (0)
-#define ioctl_info(format, ...) \
-	do {	\
-		pr_info("\e[0;33m"); \
-		pr_cont(format, ##__VA_ARGS__); \
-		pr_cont("\e[0m\n"); \
-	} while (0)
-
-#define irq_info(format, ...) \
-	do { \
-		pr_info("\e[0;34m"); \
-		pr_cont(format, ##__VA_ARGS__); \
-		pr_cont("\e[0m\n"); \
-	} while (0)
-
-#define setup_info(format, ...) \
-	do { \
-		dev_info(codec->device, format, ##__VA_ARGS__); \
-	} while (0)
-#else
-
-#define mails_info(format, ...)
-#define ioctl_info(format, ...)
-#define irq_info(format, ...)
-#define setup_info(format, ...)
-
-#endif
-
-#define mcu_info(format, ...) \
-	do {	\
-		pr_info("\e[0;31m"); \
-		pr_cont(format, ##__VA_ARGS__); \
-		pr_cont("\e[0m\n"); \
-	} while (0)
 
 /* MCU Mailbox */
 #define MAILBOX_CMD                     0x7800
@@ -122,28 +82,24 @@
 #define AXI_ADDR_OFFSET_IP              0x9208
 
 /* MCU Cache */
-#define MCU_SUBALLOCATOR_SIZE		0x800000
+#define MCU_SUBALLOCATOR_SIZE		0x1000000
 #define MCU_CACHE_OFFSET                0x80000000
 #define AL5_ICACHE_SIZE                 0x1000000 /* 16 MB */
 #define MCU_SRAM_SIZE                   0x8000   /* 32 kB */
 
 struct al5_codec_desc {
-        struct device *device;
-        struct cdev cdev;
+	struct device *device;
+	struct cdev cdev;
 
-        /* Base addr for regs */
-        void __iomem *regs;
-        unsigned long regs_size;
+	/* Base addr for regs */
+	void __iomem *regs;
+	unsigned long regs_size;
 
-        /* cache */
-        struct al5_dma_buffer *icache, *suballoc_buf;
+	/* cache */
+	struct al5_dma_buffer *icache, *suballoc_buf;
+	dma_addr_t dcache_base_addr;
 
-        /* mailbox interface */
-        struct mcu_mailbox_interface mcu;
-        spinlock_t lock;
-
-	size_t max_users_nb;
-        struct al5_user **users;
+	struct al5_group users_group;
 };
 
 struct al5_filp_data {
@@ -164,12 +120,4 @@ int al5_codec_release(struct inode *inode, struct file *filp);
 
 long al5_codec_compat_ioctl(struct file *file, unsigned int cmd,
 				       unsigned long arg);
-
-void al5_codec_unbind_user(struct al5_user *user, struct al5_codec_desc *codec);
-int al5_codec_bind_user(struct al5_user *user, struct al5_codec_desc *codec);
-
-struct al5_user * al5_get_user_from_uid(struct al5_codec_desc *codec,
-					u32 user_uid);
-struct al5_user* al5_get_user_from_chan_uid(struct al5_codec_desc* codec,
-					    u32 chan_uid);
 #endif /* _AL_CODEC_H_ */

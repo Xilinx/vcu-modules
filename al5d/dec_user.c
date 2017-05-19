@@ -20,24 +20,27 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include <linux/uaccess.h>
+#include <linux/printk.h>
+#include <linux/string.h>
 
 #include "dec_user.h"
 #include "dec_mails_factory.h"
 #include "al_mail.h"
+#include "al_mail_private.h"
+#include "al_codec_mails.h"
 
-static void update_chan_param(struct al5_channel_param *channel_param, struct al5_mail *mail)
+static void update_chan_param(struct al5_channel_status *status, struct al5_mail *mail)
 {
 	u32 tmp_num_core;
 	memcpy(&tmp_num_core, mail->body + 8, 4);
-	channel_param->num_core = (u8) tmp_num_core;
+	status->num_core = (u8) tmp_num_core;
 }
 
 static int init_chan(struct al5_user *user, struct al5_mail *mail)
 {
 	int err;
 
-	al5_get_chan_uid(&user->chan_uid, mail);
+	user->chan_uid = al5_mail_get_chan_uid(mail);
 	err = !al5_chan_is_created(user);
 	if (err) {
 		pr_err("Chan uid is BAD");
@@ -47,13 +50,9 @@ static int init_chan(struct al5_user *user, struct al5_mail *mail)
 	return 0;
 }
 
-int al5d_user_create_channel(struct al5_user *user, struct al5_channel_param *msg)
+int al5d_user_create_channel(struct al5_user *user, struct al5_channel_config *msg)
 {
 	struct al5_mail* feedback;
-	struct msg_info info = {
-		.chan_uid = user->uid,
-		.priv = msg,
-	};
 	int err;
 
 	err = mutex_lock_killable(&user->locks[AL5_USER_CREATE]);
@@ -65,13 +64,13 @@ int al5d_user_create_channel(struct al5_user *user, struct al5_channel_param *ms
 		goto unlock;
 	}
 
-	err = al5_create_and_send(user, &info, al5d_create_channel_param_msg);
+	err = al5_check_and_send(user, al5d_create_channel_param_msg(user->uid, &msg->param));
 	if (err)
 		goto unlock;
 
 	feedback = al5_queue_pop_timeout(&user->queues[AL5_USER_MAIL_CREATE]);
 	if (feedback) {
-		update_chan_param(msg, feedback);
+		update_chan_param(&msg->status, feedback);
 	} else {
 		goto unlock;
 	}
@@ -93,9 +92,7 @@ EXPORT_SYMBOL_GPL(al5d_user_create_channel);
 
 int al5d_user_decode_one_frame(struct al5_user *user, struct al5_decode_msg *msg)
 {
-	struct msg_info info;
 	int err;
-
 	err = mutex_lock_killable(&user->locks[AL5_USER_XCODE]);
 	if (err == -EINTR)
 		return err;
@@ -106,10 +103,7 @@ int al5d_user_decode_one_frame(struct al5_user *user, struct al5_decode_msg *msg
 		goto unlock;
 	}
 
-	info.chan_uid = user->chan_uid;
-	info.priv = msg;
-
-	err = al5_create_and_send(user, &info, al5d_create_decode_one_frame_msg);
+	err = al5_check_and_send(user, al5d_create_decode_one_frame_msg(user->chan_uid, msg));
 
 unlock:
 	mutex_unlock(&user->locks[AL5_USER_XCODE]);
@@ -120,22 +114,22 @@ EXPORT_SYMBOL_GPL(al5d_user_decode_one_frame);
 
 int al5d_user_search_start_code(struct al5_user *user, struct al5_search_sc_msg *msg)
 {
-	struct msg_info info = {
-		.chan_uid = user->uid,
-		.priv = msg,
-	};
-
-	return al5_create_and_send(user, &info, al5d_create_search_sc_mail);
+	return al5_check_and_send(user, al5d_create_search_sc_mail(user->uid, msg));
 }
 EXPORT_SYMBOL_GPL(al5d_user_search_start_code);
 
-int al5d_user_wait_for_status(struct al5_user *user, struct al5_pic_status *msg)
+int al5d_user_wait_for_status(struct al5_user *user, struct al5_params *msg)
 {
 	struct al5_mail *feedback;
 	int err = 0;
 
 	if (!mutex_trylock(&user->locks[AL5_USER_STATUS]))
 		return -EINTR;
+
+	if(!al5_chan_is_created(user)) {
+		err = -EPERM;
+		goto unlock;
+	}
 
 	feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_STATUS]);
 	if (feedback) {
@@ -145,6 +139,7 @@ int al5d_user_wait_for_status(struct al5_user *user, struct al5_pic_status *msg)
 	}
 	al5_free_mail(feedback);
 
+unlock:
 	mutex_unlock(&user->locks[AL5_USER_STATUS]);
 	return err;
 }

@@ -18,11 +18,10 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-#include <linux/uaccess.h>
+#include <linux/kernel.h>
 
 #include "al_user.h"
-#include "al_alloc.h"
+#include "al_codec_mails.h"
 
 static int mail_to_queue(int mail_uid)
 {
@@ -38,6 +37,9 @@ static int mail_to_queue(int mail_uid)
 		return AL5_USER_MAIL_STATUS;
 	case AL_MCU_MSG_SEARCH_START_CODE:
 		return AL5_USER_MAIL_SC;
+	case AL_MCU_MSG_GET_RECONSTRUCTED_PICTURE:
+	case AL_MCU_MSG_RELEASE_RECONSTRUCTED_PICTURE:
+		return AL5_USER_MAIL_REC;
 	default:
 		return AL5_USER_MAIL_DEBUG;
 	}
@@ -56,13 +58,9 @@ static int send_msg(struct mcu_mailbox_interface *mcu, struct al5_mail *mail)
 	return 0;
 }
 
-int al5_create_and_send(struct al5_user *user, struct msg_info *info,
-		    struct al5_mail *(*create)(struct msg_info *))
+int al5_check_and_send(struct al5_user *user, struct al5_mail *mail)
 {
-	struct al5_mail *mail = NULL;
 	int err;
-
-	mail = create(info);
 	if (!mail)
 		return -ENOMEM;
 	err = send_msg(user->mcu, mail);
@@ -72,11 +70,11 @@ int al5_create_and_send(struct al5_user *user, struct msg_info *info,
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(al5_create_and_send);
+EXPORT_SYMBOL_GPL(al5_check_and_send);
 
 void al5_user_deliver(struct al5_user *user, struct al5_mail *mail)
 {
-	struct al5_queue* queue = &user->queues[mail_to_queue(mail->msg_uid)];
+	struct al5_queue* queue = &user->queues[mail_to_queue(al5_mail_get_uid(mail))];
 	al5_queue_push(queue, mail);
 }
 
@@ -85,6 +83,7 @@ static void user_queues_unlock(struct al5_user *user)
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_STATUS]);
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_SC]);
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_CREATE]);
+	al5_queue_unlock(&user->queues[AL5_USER_MAIL_REC]);
 }
 
 static void user_queues_lock(struct al5_user *user)
@@ -92,11 +91,13 @@ static void user_queues_lock(struct al5_user *user)
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_STATUS]);
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_SC]);
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_CREATE]);
+	al5_queue_lock(&user->queues[AL5_USER_MAIL_REC]);
 }
 
-void al5_user_init(struct al5_user *user, u32 uid, struct mcu_mailbox_interface *mcu)
+void al5_user_init(struct al5_user *user, int uid, struct mcu_mailbox_interface *mcu, struct device * device)
 {
 	int i;
+        memset(user, 0, sizeof(*user));
 	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i) {
 		mutex_init(&user->locks[i]);
 	}
@@ -106,19 +107,18 @@ void al5_user_init(struct al5_user *user, u32 uid, struct mcu_mailbox_interface 
 	user->uid = uid;
 	user->mcu = mcu;
 	user->chan_uid = BAD_CHAN;
+	user->device = device;
 }
 EXPORT_SYMBOL_GPL(al5_user_init);
-
 
 int al5_user_destroy_channel(struct al5_user *user, int quiet)
 {
 	int err = 0;
 	int i, j;
-	struct msg_info info;
 	struct al5_mail *mail;
 
 	if (!al5_chan_is_created(user))
-		return -EINVAL;
+		return -EPERM;
 
 	user_queues_unlock(user);
 	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i) {
@@ -133,13 +133,12 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 
 	}
 
-	info.chan_uid = user->chan_uid;
 	if (quiet) {
-		al5_create_and_send(user, &info, create_quiet_destroy_channel_msg);
+		al5_check_and_send(user, create_quiet_destroy_channel_msg(user->chan_uid));
 		if (err)
 			goto unlock_mutexes;
 	} else {
-		err = al5_create_and_send(user, &info, create_destroy_channel_msg);
+		err = al5_check_and_send(user, create_destroy_channel_msg(user->chan_uid));
 		if (err)
 			goto unlock_mutexes;
 
@@ -150,6 +149,8 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 		al5_free_mail(mail);
 	}
 	user->chan_uid = BAD_CHAN;
+	al5_bufpool_free(&user->int_buffers, user->device);
+	al5_bufpool_free(&user->rec_buffers, user->device);
 
 unlock_mutexes:
 	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i) {
@@ -167,3 +168,14 @@ int al5_chan_is_created(struct al5_user *user)
 	return (user->chan_uid != BAD_CHAN);
 }
 EXPORT_SYMBOL_GPL(al5_chan_is_created);
+
+struct al5_mail * al5_user_get_mail(struct al5_user *user, u32 mail_uid)
+{
+	struct al5_mail* mail;
+	u32 queue_uid = mail_to_queue(mail_uid);
+	al5_queue_unlock(&user->queues[queue_uid]);
+	mail = al5_queue_pop(&user->queues[queue_uid]);
+	al5_queue_lock(&user->queues[queue_uid]);
+
+	return mail;
+}

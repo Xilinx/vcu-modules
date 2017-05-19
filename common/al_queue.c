@@ -33,7 +33,7 @@ EXPORT_SYMBOL_GPL(al5_queue_init);
 struct al5_mail * al5_queue_pop_timeout(struct al5_queue *q)
 {
 	struct al5_mail * mail;
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	wait_event_interruptible_timeout(q->queue,(!al5_list_empty(q->list)) || !q->locked, WAIT_TIMEOUT_DURATION);
 	spin_lock_irqsave(&q->lock, flags);
@@ -47,7 +47,7 @@ EXPORT_SYMBOL_GPL(al5_queue_pop_timeout);
 struct al5_mail * al5_queue_pop(struct al5_queue *q)
 {
 	struct al5_mail * mail;
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	wait_event_interruptible(q->queue,(!al5_list_empty(q->list)) || !q->locked);
 	spin_lock_irqsave(&q->lock, flags);
@@ -60,7 +60,7 @@ EXPORT_SYMBOL_GPL(al5_queue_pop);
 
 void al5_queue_push(struct al5_queue *q, struct al5_mail *mail)
 {
-	unsigned long flags;
+	unsigned long flags = 0;
 
 	spin_lock_irqsave(&q->lock, flags);
 	al5_list_push(&q->list, mail);

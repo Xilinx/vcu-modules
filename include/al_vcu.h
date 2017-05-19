@@ -24,13 +24,8 @@
 
 #include <linux/interrupt.h>
 
-#include "al_codec.h"
-#include "mcu_interface.h"
-
 #define AL5_NR_DEVS 4
 #define MAX_USERS_NB 64
-
-#define MCU_CACHE_OFFSET 0x80000000
 
 extern int max_users_nb;
 

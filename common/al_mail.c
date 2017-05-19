@@ -20,65 +20,42 @@
  */
 
 #include <linux/slab.h>
+#include <linux/string.h>
 
 #include "al_mail.h"
-#include "al_ioctl.h"
+#include "al_mail_private.h"
 
-struct al5_mail *create_init_msg(struct msg_info *info)
-
+struct al5_mail *al5_mail_create(u32 msg_uid, u32 size)
 {
-	struct buffer_msg *msg = (struct buffer_msg *) info->priv;
-	struct al5_mail *mail;
-	int channel_uid_size = 4;
-
-	mail = al5_create_msg(info->chan_uid, channel_uid_size,
-			AL_MCU_MSG_INIT, sizeof(*msg));
-	if (!mail)
-		return NULL;
-
-	memcpy(mail->body + channel_uid_size, msg, sizeof(*msg));
-
-	return mail;
-}
-
-struct al5_mail *create_destroy_channel_msg(struct msg_info *info)
-
-{
-	return al5_create_empty_msg(info->chan_uid, AL_MCU_MSG_DESTROY_CHANNEL);
-}
-
-struct al5_mail *create_quiet_destroy_channel_msg(struct msg_info *info)
-{
-	return al5_create_empty_msg(info->chan_uid, AL_MCU_MSG_QUIET_DESTROY_CHANNEL);
-}
-
-struct al5_mail *al5_create_msg(u32 mcu_chan_uid, int channel_uid_size, u32 msg_uid, u32 size)
-{
-	struct al5_mail *mail;
-
-	mail = kmalloc(sizeof(struct al5_mail), GFP_KERNEL);
+	struct al5_mail *mail = kmalloc(sizeof(*mail), GFP_KERNEL);
 	if (!mail) {
 		return NULL;
 	}
+	mail->body_offset = 0;
 	mail->msg_uid = msg_uid;
-	mail->body_size = channel_uid_size + size;
-	mail->body = kmalloc(mail->body_size, GFP_KERNEL);
+	mail->body_size = size;
+	mail->body = kmalloc(size, GFP_KERNEL);
 	if (!mail->body) {
 		kfree(mail);
 		return NULL;
 	}
 
-	memcpy(mail->body, &mcu_chan_uid, channel_uid_size);
-
 	return mail;
 }
-EXPORT_SYMBOL_GPL(al5_create_msg);
+EXPORT_SYMBOL_GPL(al5_mail_create);
 
-struct al5_mail *al5_create_empty_msg(u32 mcu_chan_uid, u32 msg_uid)
+void al5_mail_write(struct al5_mail *mail, void* content, u32 size)
 {
-	return al5_create_msg(mcu_chan_uid, 4, msg_uid, 0);
+	memcpy(mail->body + mail->body_offset, content, size);
+	mail->body_offset += size;
 }
-EXPORT_SYMBOL_GPL(al5_create_empty_msg);
+EXPORT_SYMBOL_GPL(al5_mail_write);
+
+void al5_mail_write_word(struct al5_mail *mail, u32 word)
+{
+	al5_mail_write(mail, &word, 4);
+}
+EXPORT_SYMBOL_GPL(al5_mail_write_word);
 
 void al5_free_mail(struct al5_mail *mail)
 {
@@ -89,15 +66,35 @@ void al5_free_mail(struct al5_mail *mail)
 }
 EXPORT_SYMBOL_GPL(al5_free_mail);
 
-void al5_get_user_uid(u32 *user_uid, struct al5_mail *mail)
+u32 al5_mail_get_uid(struct al5_mail *mail)
 {
-	memcpy(user_uid, mail->body + 4, 4);
+	return mail->msg_uid;
 }
-EXPORT_SYMBOL_GPL(al5_get_user_uid);
+EXPORT_SYMBOL_GPL(al5_mail_get_uid);
 
-void al5_get_chan_uid(u32 *chan_uid, struct al5_mail *mail)
+u32 al5_mail_get_size(struct al5_mail *mail)
 {
-	memcpy(chan_uid, mail->body, 4);
+	return mail->body_size;
 }
-EXPORT_SYMBOL_GPL(al5_get_chan_uid);
+EXPORT_SYMBOL_GPL(al5_mail_get_size);
 
+void * al5_mail_get_body(struct al5_mail *mail)
+{
+	return mail->body;
+}
+EXPORT_SYMBOL_GPL(al5_mail_get_body);
+
+u32 al5_mail_get_word(struct al5_mail *mail, u32 word_offset)
+{
+	return ((u32*)(mail->body))[word_offset];
+}
+EXPORT_SYMBOL_GPL(al5_mail_get_word);
+
+struct al5_mail *al5_mail_create_copy(struct al5_mail * mail)
+{
+	struct al5_mail * copy = al5_mail_create(mail->msg_uid, mail->body_size);
+	al5_mail_write(copy, mail->body, mail->body_size);
+
+	return copy;
+}
+EXPORT_SYMBOL_GPL(al5_mail_create_copy);

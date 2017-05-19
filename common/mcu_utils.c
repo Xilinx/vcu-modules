@@ -18,10 +18,9 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #include "mcu_utils.h"
 /* only 32 bits access are available on the apb */
-int memcpy_toio_32(void *pdst, const void *psrc, size_t size)
+int memcpy_toio_32(void *pdst, const void *psrc, int size)
 {
 	const __u32 *src = psrc;
 	__u32 *dst = pdst;
@@ -33,7 +32,7 @@ int memcpy_toio_32(void *pdst, const void *psrc, size_t size)
 	return 0;
 }
 
-int memcpy_fromio_32(void *pdst, void *psrc, size_t size)
+int memcpy_fromio_32(void *pdst, void *psrc, int size)
 {
 	__u32 *src = psrc;
 	__u32 *dst = pdst;

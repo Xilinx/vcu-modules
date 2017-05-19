@@ -1,5 +1,5 @@
 /*
- * enc_mails_factory.h high level message creation for the mcu
+ * al_buffers_pool.h high level function to write messages in the mailbox
  *
  * Copyright (C) 2016, Sebastien Alaiwan (sebastien.alaiwan@allegrodvt.com)
  * Copyright (C) 2016, Kevin Grandemange (kevin.grandemange@allegrodvt.com)
@@ -19,15 +19,18 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#ifndef _MCU_ENC_H_
-#define _MCU_ENC_H_
+#ifndef __AL_BUFFERS_POOL__
+#define __AL_BUFFERS_POOL__
 
-#include "al_mail.h"
-#include "al_enc_ioctl.h"
-#include "al_codec_mails.h"
+struct al5_buffers_pool {
+	int count;
+	struct al5_dma_buffer **buffers;
+	void **handles;
+	int *fds;
+};
 
-void al5e_mail_get_status(struct al5_encode_status *status, struct al5_mail *mail);
-struct al5_mail *al5e_create_encode_one_frame_msg(u32 chan_uid, struct al5_encode_msg *msg);
-struct al5_mail *al5e_create_channel_param_msg(u32 user_uid, struct al5_channel_param *msg);
+int al5_bufpool_allocate(struct al5_buffers_pool * bufpool, struct device * device, int count, int size);
+void al5_bufpool_free(struct al5_buffers_pool * bufpool, struct device * device);
+int al5_bufpool_get_id(struct al5_buffers_pool *bufpool, int fd);
 
-#endif /* _MCU_ENC_H_ */
+#endif

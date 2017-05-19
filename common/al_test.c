@@ -24,7 +24,9 @@
 
 #include "al_test.h"
 #include "al_mail.h"
+#include "al_mail_private.h"
 #include "al_alloc.h"
+#include "mcu_interface_private.h"
 
 #define TEST_MAILBOX_SIZE (0x400 - 8)
 /* headers are 4 bytes, and a msg should be at least 4 bytes below the mailbox size */
@@ -50,7 +52,7 @@ struct mail_test_ctx {
 	int error_nb;
 };
 
-unsigned long get_random_bytes_in_range(int min, int max)
+unsigned long randomBetween(int min, int max)
 {
 	unsigned long rand;
 	get_random_bytes(&rand, sizeof(unsigned long));
@@ -64,10 +66,10 @@ struct al5_mail *create_random_msg(u8 drv_chan_uid, u8 treasure)
 	u16 treasure_location;
 	size_t size;
 
-	size = get_random_bytes_in_range(4, MAX_MSG_SIZE);
-	mail = al5_create_msg(drv_chan_uid, 4, AL_MCU_MSG_RANDOM_TEST, size);
+	size = randomBetween(4, MAX_MSG_SIZE);
+	mail = al5_mail_create(AL_MCU_MSG_RANDOM_TEST, 4 + size);
 
-	treasure_location = get_random_bytes_in_range(3, mail->body_size);
+	treasure_location = randomBetween(3, mail->body_size);
 
 	memset(mail->body, 0xdd, mail->body_size);
 
@@ -81,45 +83,30 @@ struct al5_mail *create_random_msg(u8 drv_chan_uid, u8 treasure)
 
 struct al5_mail *create_set_timer_buffer_msg(struct msg_info *info)
 {
-	u32 mcu_chan_uid = info->chan_uid;
+	u32 chan_uid = info->chan_uid;
 	u32 phy_addr = (u32)(uintptr_t)info->priv;
+
 	struct al5_mail *mail;
-	int channel_uid_size = 4;
-
-	mail = al5_create_msg(mcu_chan_uid, channel_uid_size,
-			AL_MCU_MSG_SET_TIMER_BUFFER, sizeof(u32));
-
-	memcpy(mail->body + channel_uid_size, &phy_addr, sizeof(u32));
+	mail = al5_mail_create(AL_MCU_MSG_SET_TIMER_BUFFER, 4 + sizeof(u32));
+	al5_mail_write_word(mail, chan_uid);
+	al5_mail_write_word(mail, phy_addr);
 
 	return mail;
 }
 
 struct al5_mail *create_set_irq_timer_buffer_msg(struct msg_info *info)
 {
-	u32 mcu_chan_uid = info->chan_uid;
+	u32 chan_uid = info->chan_uid;
 	u32 phy_addr = (u32)(uintptr_t)info->priv;
+
 	struct al5_mail *mail;
-	int channel_uid_size = 4;
-
-	mail = al5_create_msg(mcu_chan_uid, channel_uid_size,
-			AL_MCU_MSG_SET_IRQ_TIMER_BUFFER, sizeof(u32));
-
-	memcpy(mail->body + channel_uid_size, &phy_addr, sizeof(u32));
+	mail = al5_mail_create(AL_MCU_MSG_SET_IRQ_TIMER_BUFFER, 4 + sizeof(u32));
+	al5_mail_write_word(mail, chan_uid);
+	al5_mail_write_word(mail, phy_addr);
 
 	return mail;
 }
 
-void reset_mailbox(struct mailbox *m)
-{
-	iowrite32(0, m->head);
-	iowrite32(0, m->tail);
-}
-
-static void reset_all_mailbox(struct mcu_mailbox_interface *mcu)
-{
-	reset_mailbox(mcu->cpu_to_mcu);
-	reset_mailbox(mcu->mcu_to_cpu);
-}
 
 void treasure_error(struct mail_test_ctx *ctx, u8 mail_treasure)
 {
@@ -215,6 +202,18 @@ void init_test_ctx(struct mail_test_ctx *ctx, struct mailbox *m)
 	ctx->error_nb = 0;
 }
 
+static void reset_mailbox(struct mailbox *m)
+{
+	iowrite32(0, m->head);
+	iowrite32(0, m->tail);
+}
+
+static void reset_all_mailbox(struct mcu_mailbox_interface *mcu)
+{
+	reset_mailbox(mcu->cpu_to_mcu);
+	reset_mailbox(mcu->mcu_to_cpu);
+}
+
 int al5_mail_tests(struct al5_user *user, unsigned long arg)
 {
 	struct mail_test_ctx ctx;
@@ -249,86 +248,27 @@ int al5_mail_tests(struct al5_user *user, unsigned long arg)
 }
 EXPORT_SYMBOL_GPL(al5_mail_tests);
 
-void al5_handle_mcu_random_test(struct al5_codec_desc *codec,
+void al5_handle_mcu_random_test(struct al5_group *group,
 				  struct al5_mail *mail)
 {
 	u32 user_uid = mail->body[0];
 	struct al5_user *user;
 
-	if (user_uid >= codec->max_users_nb) {
-		al5_err("Got user %d, expected less than %ld\n",
-			    user_uid, (unsigned long)codec->max_users_nb);
+	if (user_uid >= group->max_users_nb) {
+		pr_err("Got user %d, expected less than %ld\n",
+			    user_uid, (unsigned long)group->max_users_nb);
 		return;
 	}
 
-	user = codec->users[user_uid];
+	user = group->users[user_uid];
 	if (user == NULL) {
-		al5_err("No channel left for random tests\n");
+		pr_err("No channel left for random tests\n");
 		return;
 	}
 
 	al5_user_deliver(user, mail);
 }
 EXPORT_SYMBOL_GPL(al5_handle_mcu_random_test);
-
-#if AL5_DEBUG
-static char* string_from_uid(AL_EMcuMessage msg_uid)
-{
-	switch (msg_uid)
-	{
-		case AL_MCU_MSG_INIT:
-			return "AL_MCU_MSG_INIT";
-		case AL_MCU_MSG_DEINIT:
-			return "AL_MCU_MSG_DEINIT";
-		case AL_MCU_MSG_CREATE_CHANNEL:
-			return "AL_MCU_MSG_CREATE_CHANNEL";
-		case AL_MCU_MSG_DESTROY_CHANNEL:
-			return "AL_MCU_MSG_DESTROY_CHANNEL";
-		case AL_MCU_MSG_ENCODE_ONE_FRM:
-			return "AL_MCU_MSG_ENCODE_ONE_FRM";
-		case AL_MCU_MSG_DECODE_ONE_FRM:
-			return "AL_MCU_MSG_DECODE_ONE_FRM";
-		case AL_MCU_MSG_SEARCH_START_CODE:
-			return "AL_MCU_MSG_SEARCH_START_CODE";
-		case AL_MCU_MSG_QUIET_DESTROY_CHANNEL:
-			return "AL_MCU_MSG_QUIET_DESTROY_CHANNEL";
-		case AL_MCU_MSG_GET_RESOURCE:
-			return "AL_MCU_MSG_GET_RESOURCE";
-		case AL_MCU_MSG_SET_BUFFER:
-			return "AL_MCU_MSG_SET_BUFFER";
-		case AL_MCU_MSG_SHUTDOWN:
-			return "AL_MCU_MSG_SHUTDOWN";
-		case AL_MCU_MSG_TRACE:
-			return "AL_MCU_MSG_TRACE";
-		case AL_MCU_MSG_SET_TIMER_BUFFER:
-			return "AL_MCU_MSG_SET_TIMER_BUFFER";
-		case AL_MCU_MSG_SET_IRQ_TIMER_BUFFER:
-			return "AL_MCU_MSG_SET_IRQ_TIMER_BUFFER";
-		default:
-			return "unrepertoried";
-	}
-}
-#endif
-
-void al5_print_inmail_info(struct al5_mail *mail)
-{
-	mails_info("Received %s related to id %u", string_from_uid(mail->msg_uid), mail->body[0]);
-}
-EXPORT_SYMBOL_GPL(al5_print_inmail_info);
-
-void al5_print_outmail_info(struct al5_mail *mail)
-{
-	mails_info("Sent %s related to id %u", string_from_uid(mail->msg_uid), mail->body[0]);
-}
-EXPORT_SYMBOL_GPL(al5_print_outmail_info);
-
-void al5_print_mcu_trace(struct al5_codec_desc *codec,
-			    struct al5_mail *mail)
-{
-	mcu_info("Mcu trace: %s", mail->body);
-	al5_free_mail(mail);
-}
-EXPORT_SYMBOL_GPL(al5_print_mcu_trace);
 
 /* User must have chan field filled */
 int al5_set_timer_buffer(struct al5_codec_desc *codec, struct al5_user *user, unsigned long arg)
@@ -343,7 +283,7 @@ int al5_set_timer_buffer(struct al5_codec_desc *codec, struct al5_user *user, un
 	}
 
 
-	err = __get_dma_fd(codec->device, (void *)&info);
+	err = al5_allocate_dmabuf(codec->device, info.size, &info.fd);
 	if (err)
 		return err;
 
@@ -352,7 +292,7 @@ int al5_set_timer_buffer(struct al5_codec_desc *codec, struct al5_user *user, un
 	msg_info.chan_uid = user->chan_uid;
 	msg_info.priv = (void *)(uintptr_t)mcu_phy_addr;
 
-	err = al5_create_and_send(user, &msg_info, create_set_timer_buffer_msg);
+	err = al5_check_and_send(user, create_set_timer_buffer_msg(&msg_info));
 	if (err)
 		return err;
 
@@ -376,7 +316,7 @@ int al5_set_irq_timer_buffer(struct al5_codec_desc *codec, struct al5_user *user
 	}
 
 
-	err = __get_dma_fd(codec->device, (void *)&info);
+	err = al5_allocate_dmabuf(codec->device, info.size, &info.fd);
 	if (err)
 		return err;
 
@@ -385,7 +325,7 @@ int al5_set_irq_timer_buffer(struct al5_codec_desc *codec, struct al5_user *user
 	msg_info.chan_uid = user->chan_uid;
 	msg_info.priv = (void *)(uintptr_t)mcu_phy_addr;
 
-	err = al5_create_and_send(user, &msg_info, create_set_irq_timer_buffer_msg);
+	err = al5_check_and_send(user, create_set_irq_timer_buffer_msg(&msg_info));
 	if (err)
 		return err;
 

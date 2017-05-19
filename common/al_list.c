@@ -60,3 +60,12 @@ struct al5_mail * al5_list_pop(struct al5_list **l)
 		return ret;
 	}
 }
+
+void al5_list_empty_and_destroy(struct al5_list **l)
+{
+	while(!al5_list_empty(*l)) {
+		struct al5_mail * mail = al5_list_pop(l);
+		al5_free_mail(mail);
+	}
+	kfree(*l);
+}

@@ -29,14 +29,7 @@
 #include "al_mailbox.h"
 #include "al_mail.h"
 
-struct mcu_mailbox_interface {
-	struct mailbox *mcu_to_cpu;
-	struct mailbox *cpu_to_mcu;
-	spinlock_t read_lock;
-	spinlock_t write_lock;
-	void *interrupt_register;
-
-};
+struct mcu_mailbox_interface;
 
 struct mcu_mailbox_config {
 	unsigned long cmd_base;
@@ -45,16 +38,20 @@ struct mcu_mailbox_config {
 	unsigned long status_size;
 };
 
-int al5_mcu_init(struct mcu_mailbox_interface *this,
+int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
 		struct device *device,
 		struct mcu_mailbox_config *config,
 		void *mcu_interrupt_register);
 
-int al5_mcu_is_empty(struct mcu_mailbox_interface *this);
+void al5_mcu_interface_destroy(struct mcu_mailbox_interface *mcu, struct device *device);
 
-int al5_mcu_send(struct mcu_mailbox_interface *this, struct al5_mail *data);
-struct al5_mail *al5_mcu_recv(struct mcu_mailbox_interface *this);
+int al5_mcu_is_empty(struct mcu_mailbox_interface *mcu);
+
+int al5_mcu_send(struct mcu_mailbox_interface *mcu, struct al5_mail *data);
+struct al5_mail *al5_mcu_recv(struct mcu_mailbox_interface *mcu);
 
 void al5_signal_mcu(struct mcu_mailbox_interface *mcu);
+
+u32 al5_mcu_get_virtual_address(u32 physicalAddress);
 
 #endif /* _MCU_INTERFACE_H_ */

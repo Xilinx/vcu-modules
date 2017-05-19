@@ -19,6 +19,7 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+
 #include <linux/io.h>
 #include <linux/uaccess.h>
 
@@ -49,6 +50,7 @@
 #include <linux/vmalloc.h>
 
 #include "al_dec_ioctl.h"
+#include "al_alloc_ioctl.h"
 #include "al_vcu.h"
 #include "al_alloc.h"
 #include "al_user.h"
@@ -98,17 +100,17 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 	long ret;
 
 	switch (cmd) {
-		struct al5_channel_param channel_param;
-		struct al5_pic_status pic_status;
+		struct al5_channel_config channel_config;
+		struct al5_params params;
 		struct al5_decode_msg decode_msg;
 		struct al5_search_sc_msg sc_msg;
 		struct al5_scstatus sc_status;
 	case AL_MCU_CONFIG_CHANNEL:
 		ioctl_info("ioctl AL_MCU_CONFIG_CHANNEL from user %i", user->uid);
-		if (copy_from_user(&channel_param, (void*)arg, sizeof(channel_param)))
+		if (copy_from_user(&channel_config, (void*)arg, sizeof(channel_config)))
 			return -EFAULT;
-		ret = al5d_user_create_channel(user, &channel_param);
-		if (copy_to_user((void*)arg, &channel_param, sizeof(channel_param)))
+		ret = al5d_user_create_channel(user, &channel_config);
+		if (copy_to_user((void*)arg, &channel_config, sizeof(channel_config)))
 			return -EFAULT;
 		ioctl_info("end AL_MCU_CONFIG_CHANNEL for user %i", user->uid);
 		return ret;
@@ -121,10 +123,10 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 
 	case AL_MCU_WAIT_FOR_STATUS:
 		ioctl_info("ioctl AL_MCU_WAIT_FOR_STATUS from user %i", user->uid);
-		if (copy_from_user(&pic_status, (void*)arg, sizeof(pic_status)))
+		if (copy_from_user(&params, (void*)arg, sizeof(params)))
 			return -EFAULT;
-		ret = al5d_user_wait_for_status(user, &pic_status);
-		if (copy_to_user((void*)arg, &pic_status, sizeof(pic_status)))
+		ret = al5d_user_wait_for_status(user, &params);
+		if (copy_to_user((void*)arg, &params, sizeof(params)))
 			return -EFAULT;
 		ioctl_info("end AL_MCU_WAIT_FOR_STATUS for user %i", user->uid);
 		return ret;
@@ -160,11 +162,11 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 		return ret;
 
 	case GET_DMA_FD:
-		ret = al5_get_dma_fd(codec->device, arg);
+		ret = al5_ioctl_get_dma_fd(codec->device, arg);
 		return ret;
 
 	case GET_DMA_PHY:
-		ret = al5_get_dmabuf_dma_addr(codec->device, arg);
+		ret = al5_ioctl_get_dmabuf_dma_addr(codec->device, arg);
 		return ret;
 
 		/* NSFProd */
@@ -271,7 +273,7 @@ static int al5d_codec_remove(struct platform_device *pdev)
 }
 
 static const struct of_device_id al5d_codec_of_match[] = {
-	{.compatible = "al,al5d-1.0"},
+	{.compatible = "al,al5d"},
 	{ /* sentinel */ },
 };
 

@@ -18,7 +18,6 @@
  * You should have received a copy of the GNU General Public License along with
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 #ifndef _AL_CHAR_H_
 #define _AL_CHAR_H_
 

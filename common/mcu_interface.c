@@ -20,42 +20,52 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-#include "mcu_interface.h"
+#include "mcu_interface_private.h"
 #include "mcu_utils.h"
 
-int al5_mcu_init(struct mcu_mailbox_interface *this,
+#include <linux/printk.h>
+
+int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
 	     struct device *device,
 	     struct mcu_mailbox_config *config,
 	     void *mcu_interrupt_register)
 {
-	this->mcu_to_cpu = devm_kmalloc(device, sizeof(struct mailbox), GFP_KERNEL);
-	if (!this->mcu_to_cpu)
+	*mcu = devm_kmalloc(device, sizeof(*mcu), GFP_KERNEL);
+	(*mcu)->mcu_to_cpu = devm_kmalloc(device, sizeof(struct mailbox), GFP_KERNEL);
+	if (!(*mcu)->mcu_to_cpu)
 		return -ENOMEM;
 
-	this->cpu_to_mcu = devm_kmalloc(device, sizeof(struct mailbox), GFP_KERNEL);
-	if (!this->cpu_to_mcu)
+	(*mcu)->cpu_to_mcu = devm_kmalloc(device, sizeof(struct mailbox), GFP_KERNEL);
+	if (!(*mcu)->cpu_to_mcu)
 		return -ENOMEM;
 
-	al5_mailbox_init(this->cpu_to_mcu, (void*)config->cmd_base, config->cmd_size);
-	al5_mailbox_init(this->mcu_to_cpu, (void*)config->status_base, config->status_size);
-	spin_lock_init(&this->read_lock);
-	spin_lock_init(&this->write_lock);
-	this->interrupt_register = mcu_interrupt_register;
+	al5_mailbox_init((*mcu)->cpu_to_mcu, (void*)config->cmd_base, config->cmd_size);
+	al5_mailbox_init((*mcu)->mcu_to_cpu, (void*)config->status_base, config->status_size);
+	spin_lock_init(&(*mcu)->read_lock);
+	spin_lock_init(&(*mcu)->write_lock);
+	(*mcu)->interrupt_register = mcu_interrupt_register;
 
 	return 0;
 }
-EXPORT_SYMBOL_GPL(al5_mcu_init);
+EXPORT_SYMBOL_GPL(al5_mcu_interface_create);
 
+void al5_mcu_interface_destroy(struct mcu_mailbox_interface *mcu, struct device *device)
+{
+	devm_kfree(device, mcu->mcu_to_cpu);
+	devm_kfree(device, mcu->cpu_to_mcu);
+	devm_kfree(device, mcu);
+}
+EXPORT_SYMBOL_GPL(al5_mcu_interface_destroy);
 
 /* These functions call mailbox methods */
 
-int al5_mcu_send(struct mcu_mailbox_interface *this, struct al5_mail *mail)
+int al5_mcu_send(struct mcu_mailbox_interface *mcu, struct al5_mail *mail)
 {
 	int error;
 
-	spin_lock(&this->write_lock);
-	error = al5_mailbox_write(this->cpu_to_mcu, mail);
-	spin_unlock(&this->write_lock);
+	spin_lock(&mcu->write_lock);
+	error = al5_mailbox_write(mcu->cpu_to_mcu, mail);
+	spin_unlock(&mcu->write_lock);
 
 	if (error)
 		pr_err("Cannot write in mailbox !");
@@ -64,21 +74,21 @@ int al5_mcu_send(struct mcu_mailbox_interface *this, struct al5_mail *mail)
 }
 EXPORT_SYMBOL_GPL(al5_mcu_send);
 
-struct al5_mail *al5_mcu_recv(struct mcu_mailbox_interface *this)
+struct al5_mail *al5_mcu_recv(struct mcu_mailbox_interface *mcu)
 {
-	struct al5_mail *mail = kmalloc(sizeof(*mail), GFP_KERNEL);
+	struct al5_mail *mail;
 
-	spin_lock(&this->read_lock);
-	al5_mailbox_read(this->mcu_to_cpu, mail);
-	spin_unlock(&this->read_lock);
+	spin_lock(&mcu->read_lock);
+	mail = al5_mailbox_read(mcu->mcu_to_cpu);
+	spin_unlock(&mcu->read_lock);
 
 	return mail;
 }
 EXPORT_SYMBOL_GPL(al5_mcu_recv);
 
-int al5_mcu_is_empty(struct mcu_mailbox_interface *this)
+int al5_mcu_is_empty(struct mcu_mailbox_interface *mcu)
 {
-	struct mailbox *mailbox = this->mcu_to_cpu;
+	struct mailbox *mailbox = mcu->mcu_to_cpu;
 	u32 head_value = ioread32(mailbox->head);
 	u32 tail_value = ioread32(mailbox->tail);
 	return head_value == tail_value;
@@ -91,4 +101,10 @@ void al5_signal_mcu(struct mcu_mailbox_interface *mcu)
 }
 EXPORT_SYMBOL_GPL(al5_signal_mcu);
 
+const u32 mcu_cache_offset = 0x80000000;
 
+u32 al5_mcu_get_virtual_address(u32 physicalAddress)
+{
+	return physicalAddress + mcu_cache_offset;
+}
+EXPORT_SYMBOL_GPL(al5_mcu_get_virtual_address);

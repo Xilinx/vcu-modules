@@ -23,9 +23,11 @@
 #include <linux/delay.h>
 
 #include "al_mail.h"
+#include "al_codec_mails.h"
 #include "mcu_utils.h"
 #include "al_codec.h"
 #include "al_alloc.h"
+#include "mcu_interface.h"
 
 static void set_icache_offset(struct al5_codec_desc *codec)
 {
@@ -45,7 +47,7 @@ static void set_icache_offset(struct al5_codec_desc *codec)
 
 static void set_dcache_offset(struct al5_codec_desc *codec)
 {
-	dma_addr_t dma_handle = -MCU_CACHE_OFFSET;
+	dma_addr_t dma_handle = codec->dcache_base_addr - MCU_CACHE_OFFSET;
 	u32 dcache_offset_lsb = (u32)dma_handle;
 	u32 dcache_offset_msb = 0xFFFFFFFF;
 
@@ -84,7 +86,7 @@ static void stop_mcu(struct al5_codec_desc *codec)
 
 	al5_writel(0, AL5_MCU_WAKEUP);
 	al5_writel(MCU_SLEEP_INSTRUCTION, AL5_MCU_INTERRUPT_HANDLER);
-	al5_signal_mcu(&codec->mcu);
+	al5_signal_mcu(codec->users_group.mcu);
 
 	while ((al5_readl(AL5_MCU_STA) & 1) != 1 && time < 100) {
 		msleep(10);
@@ -172,63 +174,52 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 		return -ENOMEM;
 	}
 
+	/* dcache map base addr */
+
+	codec->dcache_base_addr = 0;
+
 	setup_info("icache phy is at %p", (void *)codec->icache->dma_handle);
 
 	return 0;
 }
 
-int al5_codec_bind_user(struct al5_user *user, struct al5_codec_desc *codec)
+static void set_mcu_frequency_hack_addr(struct al5_codec_desc *codec, struct mcu_init_msg *init_msg)
 {
-	unsigned long flags;
-	int uid;
-	int err = 0;
-	int i;
-
-        spin_lock_irqsave(&codec->lock, flags);
-        uid = -1;
-        for (i = 0; i < codec->max_users_nb; ++i) {
-                if (codec->users[i] == NULL) {
-                        uid = i;
-                        break;
-                }
-        }
-	if (uid == -1) {
-		al5_err("Max user allocation reached\n");
-		err = -EFAULT;
-		goto unlock;
-	}
-
-	codec->users[uid] = user;
-	al5_user_init(user, uid, &codec->mcu);
-
-unlock:
-	spin_unlock_irqrestore(&codec->lock, flags);
-	return err;
-
+	init_msg->frequency_hack_addr = codec->icache->dma_handle - codec->dcache_base_addr + MCU_CACHE_OFFSET;
 }
-EXPORT_SYMBOL_GPL(al5_codec_bind_user);
 
-void al5_codec_unbind_user(struct al5_user *user, struct al5_codec_desc *codec)
+#define AL5_FREQUENCY_HACK_ADDR_LSB 0x8130
+#define AL5_FREQUENCY_HACK_ADDR_MSB 0x8134
+static void set_hw_frequency_hack(struct al5_codec_desc *codec)
 {
-	unsigned long flags;
-
-        spin_lock_irqsave(&codec->lock, flags);
-        codec->users[user->uid] = NULL;
-        spin_unlock_irqrestore(&codec->lock, flags);
+	dma_addr_t dma_handle = codec->icache->dma_handle;
+	u32 icache_addr_lsb = (u32)dma_handle;
+	u32 icache_addr_msb = (sizeof(dma_handle) == 4) ? 0 : dma_handle >> 32;
+	al5_writel(icache_addr_lsb, AL5_FREQUENCY_HACK_ADDR_LSB);
+	al5_writel(icache_addr_msb, AL5_FREQUENCY_HACK_ADDR_MSB);
 }
-EXPORT_SYMBOL_GPL(al5_codec_unbind_user);
 
-static int init_mcu_allocator(struct al5_codec_desc *codec, struct al5_user *root)
+static void set_frequency_hack(struct al5_codec_desc *codec, struct mcu_init_msg *init_msg)
+{
+	set_mcu_frequency_hack_addr(codec, init_msg);
+	set_hw_frequency_hack(codec);
+}
+
+static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 {
 	int err = 0;
-	struct msg_info info;
-	struct buffer_msg suballoc_msg;
+	struct mcu_init_msg init_msg;
 	struct al5_mail *feedback;
 
 	codec->suballoc_buf = al5_alloc_dma(codec->device, MCU_SUBALLOCATOR_SIZE );
+	if(!codec->suballoc_buf) {
+		err = -ENOMEM;
+		goto fail_alloc;
+	}
 
-	suballoc_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
-	suballoc_msg.size = codec->suballoc_buf->size;
+	init_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
+	init_msg.size = codec->suballoc_buf->size;
+	set_frequency_hack(codec, &init_msg);
 
 	err = mutex_lock_killable(&root->locks[AL5_USER_INIT]);
 	if (err == -EINTR)
@@ -241,10 +232,7 @@ static int init_mcu_allocator(struct al5_codec_desc *codec, struct al5_user *roo
 	}
 	al5_free_mail(feedback);
 
-	info.chan_uid = root->uid;
-	info.priv = &suballoc_msg;
-
-	err = al5_create_and_send(root, &info, create_init_msg);
+	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
 	if (err)
 		goto unlock;
 
@@ -262,6 +250,8 @@ unlock:
 	mutex_unlock(&root->locks[AL5_USER_INIT]);
 fail_lock:
 	al5_free_dma(codec->device, codec->suballoc_buf);
+	codec->suballoc_buf = NULL;
+fail_alloc:
 	return err;
 }
 
@@ -278,7 +268,7 @@ int al5_codec_open(struct inode *inode, struct file *filp)
 	}
         codec = container_of(inode->i_cdev, struct al5_codec_desc, cdev);
 
-	err = al5_codec_bind_user(user, codec);
+	err = al5_group_bind_user(&codec->users_group, user);
 	if (err) {
 		kzfree(user);
 		return err;
@@ -302,49 +292,13 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 		int quiet = 1;
 		al5_user_destroy_channel(user, quiet);
 	}
-	al5_codec_unbind_user(user, codec);
+	al5_group_unbind_user(&codec->users_group, user);
 	kzfree(user);
 	kzfree(filp->private_data);
 
 	return 0;
 }
 EXPORT_SYMBOL_GPL(al5_codec_release);
-
-static int is_chan(struct al5_codec_desc *codec, int my_id, int id)
-{
-	return codec->users[id] != NULL && codec->users[id]->chan_uid == my_id;
-}
-
-struct al5_user* al5_get_user_from_chan_uid(struct al5_codec_desc* codec,
-		u32 chan_uid)
-{
-	int i;
-
-	for (i = 0; i < codec->max_users_nb; ++i)
-		if (is_chan(codec, chan_uid, i))
-			return codec->users[i];
-
-	al5_err("Cannot find channel from chan_uid received");
-
-	return NULL;
-}
-EXPORT_SYMBOL_GPL(al5_get_user_from_chan_uid);
-
-struct al5_user *al5_get_user_from_uid(struct al5_codec_desc *codec, u32 user_uid)
-{
-	struct al5_user *user;
-
-	if (user_uid >= codec->max_users_nb) {
-		al5_err("Received user id %d, expected less than %ld\n",
-			    user_uid, (unsigned long)codec->max_users_nb);
-		user = NULL;
-	} else {
-		user = codec->users[user_uid];
-	}
-
-	return user;
-}
-EXPORT_SYMBOL_GPL(al5_get_user_from_uid);
 
 int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file, char *bl_fw_file)
 {
@@ -361,7 +315,7 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file, char *bl
 	/* We need to bind root before starting the mcu because we are waiting
 	 * for a sync msg
 	 */
-	err = al5_codec_bind_user(&root, codec);
+	err = al5_group_bind_user(&codec->users_group, &root);
 	if (err)
 		goto release_firmware;
 
@@ -369,11 +323,11 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file, char *bl
 	if (err)
 		goto release_firmware;
 
-	err = init_mcu_allocator(codec, &root);
+	err = init_mcu(codec, &root);
 	if (err)
 		goto release_firmware;
 
-	al5_codec_unbind_user(&root, codec);
+	al5_group_unbind_user(&codec->users_group, &root);
 
 release_firmware:
 	release_firmware(fw);
@@ -382,13 +336,6 @@ release_firmware:
 }
 EXPORT_SYMBOL_GPL(al5_codec_set_firmware);
 
-static void init_users(struct al5_codec_desc *codec, size_t max_users_nb)
-{
-	codec->users = devm_kzalloc(codec->device,
-				    max_users_nb * sizeof(void *),
-				    GFP_KERNEL);
-	codec->max_users_nb = max_users_nb;
-}
 
 int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		     size_t max_users_nb)
@@ -397,8 +344,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	struct resource *res;
 	const char *device_name = dev_name(&pdev->dev);
 	struct mcu_mailbox_config config;
-
-	spin_lock_init(&codec->lock);
+	struct mcu_mailbox_interface *mcu;
 
 	codec->device = &pdev->dev;
 
@@ -426,16 +372,17 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		goto fail;
 	}
 
-	init_users(codec, max_users_nb);
 
 	config.cmd_base = (unsigned long)codec->regs + MAILBOX_CMD;
 	config.cmd_size = MAILBOX_SIZE;
 	config.status_base = (unsigned long)codec->regs + MAILBOX_STATUS;
 	config.status_size = MAILBOX_SIZE;
 
-	err = al5_mcu_init(&codec->mcu, codec->device, &config, codec->regs + AL5_MCU_INTERRUPT);
+	err = al5_mcu_interface_create(&mcu, codec->device, &config, codec->regs + AL5_MCU_INTERRUPT);
 	if (err)
 		goto fail;
+
+	al5_group_init(&codec->users_group, mcu, max_users_nb, codec->device);
 
 	err = alloc_mcu_caches(codec);
 	if (err) {
@@ -461,6 +408,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 
 free_mcu_caches:
 	al5_free_dma(codec->device, codec->icache);
+	codec->icache = NULL;
 fail:
 	return err;
 
@@ -469,6 +417,7 @@ EXPORT_SYMBOL_GPL(al5_codec_set_up);
 
 void al5_codec_tear_down(struct al5_codec_desc *codec)
 {
+	al5_mcu_interface_destroy(codec->users_group.mcu, codec->device);
 	al5_free_dma(codec->device, codec->suballoc_buf);
 	al5_free_dma(codec->device, codec->icache);
 }

@@ -44,7 +44,6 @@ int al5_setup_codec_cdev(struct al5_codec_desc *codec,
 			       struct module *owner, int major, int minor)
 {
 	int err, devno = MKDEV(major, minor);
-	pr_err("%s %d %d %d\n", __FUNCTION__, __LINE__, major, minor);
 	cdev_init(&codec->cdev, fops);
 	codec->cdev.owner = owner;
 	err = cdev_add(&codec->cdev, devno, 1);

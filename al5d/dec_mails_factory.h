@@ -26,11 +26,11 @@
 #include "al_mail.h"
 #include "al_dec_ioctl.h"
 
-void al5d_mail_get_status(struct al5_pic_status *status, struct al5_mail *mail);
+void al5d_mail_get_status(struct al5_params *status, struct al5_mail *mail);
 void al5d_mail_get_sc_status(struct al5_scstatus *scstatus, struct al5_mail *mail);
 
-struct al5_mail *al5d_create_decode_one_frame_msg(struct msg_info *info);
-struct al5_mail *al5d_create_channel_param_msg(struct msg_info *info);
-struct al5_mail *al5d_create_search_sc_mail(struct msg_info *info);
+struct al5_mail *al5d_create_decode_one_frame_msg(u32 chan_uid, struct al5_decode_msg *msg);
+struct al5_mail *al5d_create_channel_param_msg(u32 user_uid, struct al5_params *msg);
+struct al5_mail *al5d_create_search_sc_mail(u32 user_uid, struct al5_search_sc_msg *msg);
 
 #endif /* _MCU_DEC_H_ */

@@ -20,14 +20,20 @@
  */
 
 #include <linux/device.h>
-#include <linux/uaccess.h>
+#include <linux/string.h>
+
 #include "al_mail.h"
+#include "al_mail_private.h"
+#include "al_codec_mails.h"
 #include "dec_mails_factory.h"
 
+const u32 sender_uid_size = 4;
+
 /* *msg is filled, *mail is read-only */
-void al5d_mail_get_status(struct al5_pic_status *status, struct al5_mail *mail)
+void al5d_mail_get_status(struct al5_params *status, struct al5_mail *mail)
 {
-	memcpy(status, mail->body + 4, sizeof(*status));
+	status->size = mail->body_size - 4;
+	memcpy(&status->opaque, mail->body + 4, status->size);
 }
 
 /* *msg is filled, *mail is read-only */
@@ -37,58 +43,36 @@ void al5d_mail_get_sc_status(struct al5_scstatus *scstatus, struct al5_mail *mai
 }
 
 struct al5_mail *
-al5d_create_decode_one_frame_msg(struct msg_info *info)
+al5d_create_decode_one_frame_msg(u32 chan_uid, struct al5_decode_msg *msg)
 {
-	struct al5_decode_msg *msg = (struct al5_decode_msg *)info->priv;
-	struct al5_mail *mail;
-	int channel_uid_size = 4;
-	u32 mcu_chan_uid = info->chan_uid;
-	size_t size = sizeof(*msg);
-
-	mail = al5_create_msg(mcu_chan_uid, channel_uid_size,
-			      AL_MCU_MSG_DECODE_ONE_FRM, size);
-	if (!mail)
-		return NULL;
-
-	memcpy(mail->body + channel_uid_size, msg, sizeof(*msg));
+	int mail_size = 4 + msg->params.size + msg->addresses.size + sizeof(msg->slice_param_v);
+	struct al5_mail * mail = al5_mail_create(AL_MCU_MSG_DECODE_ONE_FRM, mail_size);
+	al5_mail_write_word(mail, chan_uid);
+	al5_mail_write(mail, msg->params.opaque, msg->params.size);
+	al5_mail_write(mail, msg->addresses.opaque, msg->addresses.size);
+	al5_mail_write_word(mail, msg->slice_param_v);
 
 	return mail;
 }
-
-struct al5_mail *al5d_create_channel_param_msg(struct msg_info *info)
-{
-	struct al5_channel_param *msg = (struct al5_channel_param *)info->priv;
-	struct al5_mail *mail;
-	u32 drv_chan_uid = info->chan_uid;
-	int channel_uid_size = 4;
-	size_t size = channel_uid_size + sizeof(struct al5_channel_param);
-
-	mail = al5_create_msg(drv_chan_uid, channel_uid_size,
-			      AL_MCU_MSG_CREATE_CHANNEL, size);
-	if (!mail)
-		return NULL;
-
-	memcpy(mail->body + channel_uid_size, msg, sizeof(*msg));
-
-	return mail;
-}
-
 
 struct al5_mail *
-al5d_create_search_sc_mail(struct msg_info *info)
+al5d_create_channel_param_msg(u32 user_uid, struct al5_params *msg)
 {
-	struct al5_search_sc_msg *msg = (struct al5_search_sc_msg *)info->priv;
-	u32 user_uid = info->chan_uid;
-	struct al5_mail *mail;
-	int user_uid_size = 4;
-	size_t size = sizeof(*msg);
+        int mail_size = 4 + msg->size;
+        struct al5_mail * mail = al5_mail_create(AL_MCU_MSG_CREATE_CHANNEL, mail_size);
+        al5_mail_write_word(mail, user_uid);
+        al5_mail_write(mail, msg->opaque, msg->size);
+        return mail;
+}
 
-	mail = al5_create_msg(user_uid, user_uid_size,
-			      AL_MCU_MSG_SEARCH_START_CODE, size);
-	if (!mail)
-		return NULL;
+struct al5_mail *
+al5d_create_search_sc_mail(u32 user_uid, struct al5_search_sc_msg *msg)
+{
+        int mail_size = 4 + msg->param.size + msg->buffer_addrs.size;
+        struct al5_mail * mail = al5_mail_create(AL_MCU_MSG_SEARCH_START_CODE, mail_size);
+        al5_mail_write_word(mail, user_uid);
+        al5_mail_write(mail, msg->param.opaque, msg->param.size);
+        al5_mail_write(mail, msg->buffer_addrs.opaque, msg->buffer_addrs.size);
 
-	memcpy(mail->body + user_uid_size, msg,	sizeof(*msg));
-
-	return mail;
+        return mail;
 }

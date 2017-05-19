@@ -83,10 +83,14 @@ void al5_mailbox_init(struct mailbox *box, void* base, size_t data_size)
 }
 EXPORT_SYMBOL_GPL(al5_mailbox_init);
 
-static void unserialize_header(u8 *header, u16 *msg_uid, u16 *body_size)
+static u16 unserialize_msg_uid(u8 *header)
 {
-	*body_size = header[0] + (header[1] << 8);
-	*msg_uid = header[2] + (header[3] << 8);
+	return header[2] + (header[3] << 8);
+}
+
+static u16 unserialize_body_size(u8 * header)
+{
+	return header[0] + (header[1] << 8);
 }
 
 static void serialize_header(u8 *header, u16 msg_uid, u16 body_size)
@@ -122,8 +126,9 @@ static void write_data(struct mailbox *box, u8 *in_data, size_t size)
 	box->local_tail = tail_value;
 }
 
-static void read_data(struct mailbox *box, u8 *out_data, size_t size)
+static u8* read_data(struct mailbox *box, size_t size)
 {
+	u8* out_data = kzalloc(size, GFP_KERNEL);
 	u32 head_value = ioread32(box->head);
 	u8 *data_iterator = out_data;
 	if (mailbox_is_wrapping(box->size, head_value, size))
@@ -132,12 +137,15 @@ static void read_data(struct mailbox *box, u8 *out_data, size_t size)
 
 	head_value = ((head_value + size + 3) / 4 * 4) % box->size;
 	iowrite32(head_value, box->head);
+
+	return out_data;
 }
 
 int al5_mailbox_write(struct mailbox *box, struct al5_mail *mail)
 {
 	u8 header[header_size];
-	size_t mail_size = mail->body_size + header_size;
+	size_t mail_size = al5_mail_get_size(mail);
+	size_t total_size = mail_size + header_size;
 	unsigned int head_value = ioread32(box->head);
 	unsigned int tail_value = ioread32(box->tail);
 	size_t mailbox_size = box->size;
@@ -145,29 +153,33 @@ int al5_mailbox_write(struct mailbox *box, struct al5_mail *mail)
 		(tail_value >= head_value) ? (tail_value - head_value)
 		: (mailbox_size + tail_value - head_value);
 
-	if (not_enough_space_in_mailbox(mailbox_size, used_size, mail_size))
+	if (not_enough_space_in_mailbox(mailbox_size, used_size, total_size))
 		return -EAGAIN;
 
-	serialize_header(header, mail->msg_uid, mail->body_size);
+	serialize_header(header, al5_mail_get_uid(mail), mail_size);
 
 	pull_tail(box);
 	write_data(box, header, header_size);
-	write_data(box, mail->body, mail->body_size);
+	write_data(box, al5_mail_get_body(mail), mail_size);
 	push_tail(box);
 
 	return 0;
 }
 EXPORT_SYMBOL_GPL(al5_mailbox_write);
 
-void al5_mailbox_read(struct mailbox *box, struct al5_mail *mail)
+struct al5_mail * al5_mailbox_read(struct mailbox *box)
 {
-	u8 header[header_size];
-	read_data(box, header, header_size);
-	unserialize_header(header, &mail->msg_uid, &mail->body_size);
+	u8 *header = read_data(box, header_size);
+	u16 msg_uid = unserialize_msg_uid(header);
+	u16 body_size = unserialize_body_size(header);
+	struct al5_mail *mail = al5_mail_create(msg_uid, body_size);
 
-	mail->body = kmalloc(mail->body_size, GFP_KERNEL);
+	u8 *body = read_data(box, body_size);
+	al5_mail_write(mail, body, body_size);
 
-	read_data(box, mail->body, mail->body_size);
+	kfree(header);
+	kfree(body);
+
+	return mail;
 }
 EXPORT_SYMBOL_GPL(al5_mailbox_read);
-
