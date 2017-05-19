@@ -23,15 +23,19 @@
 #include "al_codec.h"
 #include "al_group.h"
 
-static void ack_interrupt(struct al5_codec_desc *codec)
-{
-	al5_writel(0x1, AL5_MCU_INTERRUPT_CLR);
-}
+#define AL5_MCU_IRQ_STA 0x910C
 
 irqreturn_t al5_hardirq_handler(int irq, void *data)
 {
 	struct al5_codec_desc *codec = (struct al5_codec_desc *)data;
-	ack_interrupt(codec);
+
+        if (al5_readl(AL5_MCU_IRQ_STA) == 0)
+                return IRQ_NONE;
+
+	al5_writel(0x1, AL5_MCU_INTERRUPT_CLR);
+	mb();
+	al5_readl(AL5_MCU_IRQ_STA);
+
 	return IRQ_WAKE_THREAD;
 }
 EXPORT_SYMBOL_GPL(al5_hardirq_handler);
