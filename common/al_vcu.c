@@ -28,11 +28,14 @@
 irqreturn_t al5_hardirq_handler(int irq, void *data)
 {
 	struct al5_codec_desc *codec = (struct al5_codec_desc *)data;
+	u32 irq_status = al5_readl(AL5_MCU_IRQ_STA);
 
-        if (al5_readl(AL5_MCU_IRQ_STA) == 0)
+	if (irq_status == 0)
                 return IRQ_NONE;
 
-	al5_writel(0x1, AL5_MCU_INTERRUPT_CLR);
+	al5_writel(irq_status, AL5_MCU_INTERRUPT_CLR);
+
+	/* wait for the interrupt acknowledgment to propagate in the hw */
 	al5_readl(AL5_MCU_IRQ_STA);
 
 	return IRQ_WAKE_THREAD;
