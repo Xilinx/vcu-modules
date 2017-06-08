@@ -40,8 +40,7 @@
 #define AL_MAX_ROWS_TILE       22
 #define AL_NUM_CORE            4
 
-struct al5_reconstructed_info
-{
+struct al5_reconstructed_info {
 	__u32 fd;
 	__u32 pic_struct;
 	__u32 poc;
@@ -52,16 +51,14 @@ struct al5_channel_param {
 	__u32 opaque_params[128];
 };
 
-struct al5_channel_status
-{
+struct al5_channel_status {
 	__u32 options;
 	__u8 num_core;
 	__u32 pps_param;
 	__u32 error_code;
 };
 
-struct al5_config_channel
-{
+struct al5_config_channel {
 	struct al5_channel_param param;
 	struct al5_channel_status status;
 };
@@ -82,8 +79,7 @@ struct al5_enc_pic_buf_addrs {
 	__u32 ep2v;
 };
 
-struct al5_enc_pic_status
-{
+struct al5_enc_pic_status {
 	__u64 user_param;
 	__u64 src_handle;
 	__u32 skip;
@@ -123,8 +119,7 @@ struct al5_encode_status {
 	struct al5_enc_pic_status pic_status;
 };
 
-struct al5_enc_request_info
-{
+struct al5_enc_request_info {
 	__u32 req_options;
 	__u32 scene_change_delay;
 };

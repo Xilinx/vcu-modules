@@ -34,38 +34,32 @@
 #define AL_MCU_SET_TIMER_BUFFER _IOWR('q', 16, struct al5_dma_info)
 #define AL_MCU_SET_IRQ_TIMER_BUFFER _IOWR('q', 17, struct al5_dma_info)
 
-struct al5_channel_status
-{
+struct al5_channel_status {
 	__u8 num_core;
 };
 
-struct al5_params
-{
+struct al5_params {
 	__u32 size;
 	__u32 opaque[128];
 };
 
-struct al5_channel_config
-{
+struct al5_channel_config {
 	struct al5_params param;
 	struct al5_channel_status status;
 };
 
-struct al5_scstatus
-{
+struct al5_scstatus {
 	__u16 num_sc;
 	__u32 num_bytes;
 };
 
-struct al5_decode_msg
-{
+struct al5_decode_msg {
 	struct al5_params params;
 	struct al5_params addresses;
 	__u32 slice_param_v;
 };
 
-struct al5_search_sc_msg
-{
+struct al5_search_sc_msg {
 	struct al5_params param;
 	struct al5_params buffer_addrs;
 };
