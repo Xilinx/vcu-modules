@@ -87,8 +87,8 @@ static void stop_mcu(struct al5_codec_desc *codec)
 	al5_signal_mcu(codec->users_group.mcu);
 
 	while ((al5_readl(AL5_MCU_STA) & 1) != 1 && time < 100) {
-		msleep(10);
-		time += 10;
+		msleep(20);
+		time += 20;
 	}
 }
 
