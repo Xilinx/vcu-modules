@@ -13,39 +13,6 @@ MODULE_AUTHOR("Sebastien Alaiwan");
 MODULE_AUTHOR("Antoine Gruzelle");
 MODULE_DESCRIPTION("Allegro Common");
 
-#if KERNEL_VERSION(4, 1, 0) > LINUX_VERSION_CODE
-#define AL_DMA_BUF_4_0_COMPAT
-#define AL_DMA_BUF_COMPAT
-
-struct dma_buf_export_info {
-	const char *exp_name;
-	const struct dma_buf_ops *ops;
-	size_t size;
-	int flags;
-	struct reservation_object *resv;
-	void *priv;
-};
-
-#define __compat_dma_buf_export(priv, ops, size, flags, resv) \
-	dma_buf_export_named(priv, ops, size, flags, KBUILD_MODNAME, resv)
-
-#undef dma_buf_export
-static struct dma_buf *dma_buf_export(const struct dma_buf_export_info *i);
-
-#elif KERNEL_VERSION(4, 2, 0) > LINUX_VERSION_CODE
-#define AL_DMA_BUF_4_1_COMPAT
-#define AL_DMA_BUF_COMPAT
-
-#endif
-
-#if KERNEL_VERSION(4, 1, 0) > LINUX_VERSION_CODE
-static struct dma_buf *dma_buf_export(const struct dma_buf_export_info *i)
-{
-	return __compat_dma_buf_export(i->priv, i->ops, i->size, i->flags,
-				       i->resv);
-}
-#endif
-
 struct al5_dmabuf_priv {
 	struct al5_dma_buffer *buffer;
 
@@ -243,9 +210,7 @@ static void define_export_info(struct dma_buf_export_info *exp_info,
 			       int size,
 			       void *priv)
 {
-#ifndef AL_DMA_BUF_COMPAT
 	exp_info->owner = THIS_MODULE;
-#endif
 	exp_info->exp_name = KBUILD_MODNAME;
 	exp_info->ops = &al5_dmabuf_ops;
 	exp_info->flags = O_RDWR;
