@@ -33,7 +33,6 @@ irqreturn_t al5_hardirq_handler(int irq, void *data)
                 return IRQ_NONE;
 
 	al5_writel(0x1, AL5_MCU_INTERRUPT_CLR);
-	mb();
 	al5_readl(AL5_MCU_IRQ_STA);
 
 	return IRQ_WAKE_THREAD;
