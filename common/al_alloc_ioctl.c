@@ -8,9 +8,8 @@ int al5_ioctl_get_dma_fd(struct device *dev, unsigned long arg)
 	struct al5_dma_info info;
 	int err;
 
-	if (copy_from_user(&info, (struct al5_dma_info *)arg, sizeof(info))) {
+	if (copy_from_user(&info, (struct al5_dma_info *)arg, sizeof(info)))
 		return -EFAULT;
-	}
 
 	err = al5_allocate_dmabuf(dev, info.size, &info.fd);
 	if (err)
@@ -32,9 +31,8 @@ int al5_ioctl_get_dmabuf_dma_addr(struct device *dev, unsigned long arg)
 	struct al5_dma_info info;
 	int err;
 
-	if (copy_from_user(&info, (struct al5_dma_info *)arg, sizeof(info))) {
+	if (copy_from_user(&info, (struct al5_dma_info *)arg, sizeof(info)))
 		return -EFAULT;
-	}
 
 	err = al5_dmabuf_get_address(dev, info.fd, &info.phy_addr);
 	if (err)

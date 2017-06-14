@@ -27,12 +27,12 @@
 
 struct al5_mail *al5_mail_create(u32 msg_uid, u32 content_size)
 {
-	// body should be aligned 32 bits
+	/* body should be aligned 32 bits */
 	const size_t mail_size = roundup(sizeof(struct al5_mail), 4);
 	struct al5_mail *mail = kmalloc(mail_size + content_size, GFP_KERNEL);
-	if (!mail) {
+
+	if (!mail)
 		return NULL;
-	}
 	mail->body_offset = 0;
 	mail->msg_uid = msg_uid;
 	mail->body_size = content_size;
@@ -42,7 +42,7 @@ struct al5_mail *al5_mail_create(u32 msg_uid, u32 content_size)
 }
 EXPORT_SYMBOL_GPL(al5_mail_create);
 
-void al5_mail_write(struct al5_mail *mail, void* content, u32 size)
+void al5_mail_write(struct al5_mail *mail, void *content, u32 size)
 {
 	memcpy(mail->body + mail->body_offset, content, size);
 	mail->body_offset += size;
@@ -57,9 +57,8 @@ EXPORT_SYMBOL_GPL(al5_mail_write_word);
 
 void al5_free_mail(struct al5_mail *mail)
 {
-	if (mail != NULL) {
+	if (mail != NULL)
 		kfree(mail);
-	}
 }
 EXPORT_SYMBOL_GPL(al5_free_mail);
 
@@ -75,7 +74,7 @@ u32 al5_mail_get_size(struct al5_mail *mail)
 }
 EXPORT_SYMBOL_GPL(al5_mail_get_size);
 
-void * al5_mail_get_body(struct al5_mail *mail)
+void *al5_mail_get_body(struct al5_mail *mail)
 {
 	return mail->body;
 }
@@ -83,13 +82,14 @@ EXPORT_SYMBOL_GPL(al5_mail_get_body);
 
 u32 al5_mail_get_word(struct al5_mail *mail, u32 word_offset)
 {
-	return ((u32*)(mail->body))[word_offset];
+	return ((u32 *)(mail->body))[word_offset];
 }
 EXPORT_SYMBOL_GPL(al5_mail_get_word);
 
-struct al5_mail *al5_mail_create_copy(struct al5_mail * mail)
+struct al5_mail *al5_mail_create_copy(struct al5_mail *mail)
 {
-	struct al5_mail * copy = al5_mail_create(mail->msg_uid, mail->body_size);
+	struct al5_mail *copy = al5_mail_create(mail->msg_uid, mail->body_size);
+
 	al5_mail_write(copy, mail->body, mail->body_size);
 
 	return copy;

@@ -25,11 +25,14 @@
 #include <linux/dma-buf.h>
 #include "al_buffers_pool.h"
 
-int al5_bufpool_allocate(struct al5_buffers_pool * bufpool, struct device * device, int count, int size)
+int al5_bufpool_allocate(struct al5_buffers_pool *bufpool,
+			 struct device *device, int count, int size)
 {
 	int i;
+
 	bufpool->count = 0;
-	bufpool->buffers = kcalloc(count, sizeof(struct al5_dma_buffer*), GFP_KERNEL);
+	bufpool->buffers = kcalloc(count, sizeof(struct al5_dma_buffer *),
+				   GFP_KERNEL);
 	if (!bufpool->buffers)
 		goto fail_buffers;
 
@@ -45,8 +48,9 @@ int al5_bufpool_allocate(struct al5_buffers_pool * bufpool, struct device * devi
 		bufpool->buffers[i] = al5_alloc_dma(device, size);
 		if (bufpool->buffers[i] == NULL)
 			goto fail_dma_allocation;
-		bufpool->fds[i] = al5_create_dmabuf_fd(device, size, bufpool->buffers[i]);
-		bufpool->handles[i] = (void*)dma_buf_get(bufpool->fds[i]);
+		bufpool->fds[i] = al5_create_dmabuf_fd(device, size,
+						       bufpool->buffers[i]);
+		bufpool->handles[i] = (void *)dma_buf_get(bufpool->fds[i]);
 		++bufpool->count;
 	}
 
@@ -65,11 +69,12 @@ fail_buffers:
 }
 EXPORT_SYMBOL_GPL(al5_bufpool_allocate);
 
-void al5_bufpool_free(struct al5_buffers_pool * bufpool, struct device * device)
+void al5_bufpool_free(struct al5_buffers_pool *bufpool, struct device *device)
 {
 	int i;
+
 	for (i = 0; i < bufpool->count; i++)
-		dma_buf_put((struct dma_buf*)bufpool->handles[i]);
+		dma_buf_put((struct dma_buf *)bufpool->handles[i]);
 	kfree(bufpool->buffers);
 	kfree(bufpool->handles);
 	kfree(bufpool->fds);
@@ -81,17 +86,17 @@ int al5_bufpool_get_id(struct al5_buffers_pool *bufpool, int fd)
 {
 	u32 i = 0;
 	void *handle = (void *)dma_buf_get(fd);
+
 	if (IS_ERR(handle))
 		return -1;
 
 	for (i = 0; i < bufpool->count; ++i) {
-		if (handle == bufpool->handles[i])
-		{
-			dma_buf_put((struct dma_buf*)handle);
+		if (handle == bufpool->handles[i]) {
+			dma_buf_put((struct dma_buf *)handle);
 			return i;
 		}
 	}
-	dma_buf_put((struct dma_buf*)handle);
+	dma_buf_put((struct dma_buf *)handle);
 	return -1;
 }
 EXPORT_SYMBOL_GPL(al5_bufpool_get_id);

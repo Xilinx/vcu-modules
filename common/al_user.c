@@ -61,6 +61,7 @@ static int send_msg(struct mcu_mailbox_interface *mcu, struct al5_mail *mail)
 int al5_check_and_send(struct al5_user *user, struct al5_mail *mail)
 {
 	int err;
+
 	if (!mail)
 		return -ENOMEM;
 	err = send_msg(user->mcu, mail);
@@ -74,7 +75,9 @@ EXPORT_SYMBOL_GPL(al5_check_and_send);
 
 void al5_user_deliver(struct al5_user *user, struct al5_mail *mail)
 {
-	struct al5_queue* queue = &user->queues[mail_to_queue(al5_mail_get_uid(mail))];
+	struct al5_queue *queue =
+		&user->queues[mail_to_queue(al5_mail_get_uid(mail))];
+
 	al5_queue_push(queue, mail);
 }
 
@@ -94,16 +97,16 @@ static void user_queues_lock(struct al5_user *user)
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_REC]);
 }
 
-void al5_user_init(struct al5_user *user, int uid, struct mcu_mailbox_interface *mcu, struct device * device)
+void al5_user_init(struct al5_user *user, int uid,
+		   struct mcu_mailbox_interface *mcu, struct device *device)
 {
 	int i;
-        memset(user, 0, sizeof(*user));
-	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i) {
+
+	memset(user, 0, sizeof(*user));
+	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i)
 		mutex_init(&user->locks[i]);
-	}
-	for (i = 0; i < AL5_USER_MAIL_NUMBER; ++i) {
+	for (i = 0; i < AL5_USER_MAIL_NUMBER; ++i)
 		al5_queue_init(&user->queues[i]);
-	}
 	user->uid = uid;
 	user->mcu = mcu;
 	user->chan_uid = BAD_CHAN;
@@ -124,9 +127,8 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i) {
 		err = mutex_lock_killable(&user->locks[i]);
 		if (err == -EINTR) {
-			for (j = 0; j < i; ++j) {
+			for (j = 0; j < i; ++j)
 				mutex_unlock(&user->locks[j]);
-			}
 
 			goto relock_user_queues;
 		}
@@ -134,11 +136,14 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 	}
 
 	if (quiet) {
-		al5_check_and_send(user, create_quiet_destroy_channel_msg(user->chan_uid));
+		err = al5_check_and_send(user,
+					 create_quiet_destroy_channel_msg(
+						 user->chan_uid));
 		if (err)
 			goto unlock_mutexes;
 	} else {
-		err = al5_check_and_send(user, create_destroy_channel_msg(user->chan_uid));
+		err = al5_check_and_send(user, create_destroy_channel_msg(
+						 user->chan_uid));
 		if (err)
 			goto unlock_mutexes;
 
@@ -153,9 +158,8 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 	al5_bufpool_free(&user->rec_buffers, user->device);
 
 unlock_mutexes:
-	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i) {
+	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i)
 		mutex_unlock(&user->locks[i]);
-	}
 relock_user_queues:
 	user_queues_lock(user);
 	return err;
@@ -165,14 +169,15 @@ EXPORT_SYMBOL_GPL(al5_user_destroy_channel);
 
 int al5_chan_is_created(struct al5_user *user)
 {
-	return (user->chan_uid != BAD_CHAN);
+	return user->chan_uid != BAD_CHAN;
 }
 EXPORT_SYMBOL_GPL(al5_chan_is_created);
 
-struct al5_mail * al5_user_get_mail(struct al5_user *user, u32 mail_uid)
+struct al5_mail *al5_user_get_mail(struct al5_user *user, u32 mail_uid)
 {
-	struct al5_mail* mail;
+	struct al5_mail *mail;
 	u32 queue_uid = mail_to_queue(mail_uid);
+
 	al5_queue_unlock(&user->queues[queue_uid]);
 	mail = al5_queue_pop(&user->queues[queue_uid]);
 	al5_queue_lock(&user->queues[queue_uid]);

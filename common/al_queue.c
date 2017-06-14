@@ -30,12 +30,19 @@ void al5_queue_init(struct al5_queue *q)
 }
 EXPORT_SYMBOL_GPL(al5_queue_init);
 
-struct al5_mail * al5_queue_pop_timeout(struct al5_queue *q)
+static bool mail_is_available(struct al5_queue *q)
 {
-	struct al5_mail * mail;
+	return !al5_list_empty(q->list) || !q->locked;
+}
+
+struct al5_mail *al5_queue_pop_timeout(struct al5_queue *q)
+{
+	struct al5_mail *mail;
 	unsigned long flags = 0;
 
-	wait_event_interruptible_timeout(q->queue,(!al5_list_empty(q->list)) || !q->locked, WAIT_TIMEOUT_DURATION);
+	wait_event_interruptible_timeout(q->queue,
+					 mail_is_available(q),
+					 WAIT_TIMEOUT_DURATION);
 	spin_lock_irqsave(&q->lock, flags);
 	mail = al5_list_pop(&q->list);
 	spin_unlock_irqrestore(&q->lock, flags);
@@ -44,12 +51,12 @@ struct al5_mail * al5_queue_pop_timeout(struct al5_queue *q)
 }
 EXPORT_SYMBOL_GPL(al5_queue_pop_timeout);
 
-struct al5_mail * al5_queue_pop(struct al5_queue *q)
+struct al5_mail *al5_queue_pop(struct al5_queue *q)
 {
-	struct al5_mail * mail;
+	struct al5_mail *mail;
 	unsigned long flags = 0;
 
-	wait_event_interruptible(q->queue,(!al5_list_empty(q->list)) || !q->locked);
+	wait_event_interruptible(q->queue, mail_is_available(q));
 	spin_lock_irqsave(&q->lock, flags);
 	mail = al5_list_pop(&q->list);
 	spin_unlock_irqrestore(&q->lock, flags);

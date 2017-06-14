@@ -76,23 +76,23 @@ static int ioctl_usage(struct al5_user *user, unsigned int cmd)
 	pr_err("Unknown ioctl: 0x%.8X\n", cmd);
 	pr_err("Known ioctl are:\n");
 	pr_err("AL_MCU_CONFIG_CHANNEL:%.8lX\n",
-		(unsigned long)AL_MCU_CONFIG_CHANNEL);
+	       (unsigned long)AL_MCU_CONFIG_CHANNEL);
 	pr_err("AL_MCU_DESTROY_CHANNEL:%.8lX\n",
-		(unsigned long)AL_MCU_DESTROY_CHANNEL);
+	       (unsigned long)AL_MCU_DESTROY_CHANNEL);
 	pr_err("AL_MCU_DECODE_ONE_FRM:%.8lX\n",
-		(unsigned long)AL_MCU_DECODE_ONE_FRM);
+	       (unsigned long)AL_MCU_DECODE_ONE_FRM);
 	pr_err("AL_MCU_WAIT_FOR_STATUS:%.8lX\n",
-		(unsigned long)AL_MCU_WAIT_FOR_STATUS);
+	       (unsigned long)AL_MCU_WAIT_FOR_STATUS);
 	pr_err("AL_MCU_SEARCH_START_CODE:%.8lX\n",
-		(unsigned long)AL_MCU_SEARCH_START_CODE);
+	       (unsigned long)AL_MCU_SEARCH_START_CODE);
 	pr_err("GET_DMA_FD:%.8lX\n",
-		(unsigned long)GET_DMA_FD);
+	       (unsigned long)GET_DMA_FD);
 
 	return -EINVAL;
 }
 
 static long al5d_ioctl(struct file *filp, unsigned int cmd,
-				unsigned long arg)
+		       unsigned long arg)
 {
 	struct al5_filp_data *filp_data = filp->private_data;
 	struct al5_user *user = filp_data->user;
@@ -106,59 +106,70 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 		struct al5_search_sc_msg sc_msg;
 		struct al5_scstatus sc_status;
 	case AL_MCU_CONFIG_CHANNEL:
-		ioctl_info("ioctl AL_MCU_CONFIG_CHANNEL from user %i", user->uid);
-		if (copy_from_user(&channel_config, (void*)arg, sizeof(channel_config)))
+		ioctl_info("ioctl AL_MCU_CONFIG_CHANNEL from user %i",
+			   user->uid);
+		if (copy_from_user(&channel_config, (void *)arg,
+				   sizeof(channel_config)))
 			return -EFAULT;
 		ret = al5d_user_create_channel(user, &channel_config);
-		if (copy_to_user((void*)arg, &channel_config, sizeof(channel_config)))
+		if (copy_to_user((void *)arg, &channel_config,
+				 sizeof(channel_config)))
 			return -EFAULT;
 		ioctl_info("end AL_MCU_CONFIG_CHANNEL for user %i", user->uid);
 		return ret;
 
 	case AL_MCU_DESTROY_CHANNEL:
-		ioctl_info("ioctl AL_MCU_DESTROY_CHANNEL from user %i", user->uid);
+		ioctl_info("ioctl AL_MCU_DESTROY_CHANNEL from user %i",
+			   user->uid);
 		ret = al5_user_destroy_channel(user, false);
 		ioctl_info("end AL_MCU_DESTROY_CHANNEL for user %i", user->uid);
 		return ret;
 
 	case AL_MCU_WAIT_FOR_STATUS:
-		ioctl_info("ioctl AL_MCU_WAIT_FOR_STATUS from user %i", user->uid);
-		if (copy_from_user(&params, (void*)arg, sizeof(params)))
+		ioctl_info("ioctl AL_MCU_WAIT_FOR_STATUS from user %i",
+			   user->uid);
+		if (copy_from_user(&params, (void *)arg, sizeof(params)))
 			return -EFAULT;
 		ret = al5d_user_wait_for_status(user, &params);
-		if (copy_to_user((void*)arg, &params, sizeof(params)))
+		if (copy_to_user((void *)arg, &params, sizeof(params)))
 			return -EFAULT;
 		ioctl_info("end AL_MCU_WAIT_FOR_STATUS for user %i", user->uid);
 		return ret;
 
 	case AL_MCU_DECODE_ONE_FRM:
-		ioctl_info("ioctl AL_MCU_DECODE_ONE_FRM from user %i", user->uid);
-		if (copy_from_user(&decode_msg, (void*)arg, sizeof(decode_msg)))
+		ioctl_info("ioctl AL_MCU_DECODE_ONE_FRM from user %i",
+			   user->uid);
+		if (copy_from_user(&decode_msg, (void *)arg,
+				   sizeof(decode_msg)))
 			return -EFAULT;
 		ret = al5d_user_decode_one_frame(user, &decode_msg);
-		if (copy_to_user((void*)arg, &decode_msg, sizeof(decode_msg)))
+		if (copy_to_user((void *)arg, &decode_msg, sizeof(decode_msg)))
 			return -EFAULT;
 		ioctl_info("end AL_MCU_DECODE_ONE_FRM for user %i", user->uid);
 		return ret;
 
 	case AL_MCU_SEARCH_START_CODE:
-		ioctl_info("ioctl AL_MCU_SEARCH_START_CODE from user %i", user->uid);
-		if (copy_from_user(&sc_msg, (void*)arg, sizeof(sc_msg)))
+		ioctl_info("ioctl AL_MCU_SEARCH_START_CODE from user %i",
+			   user->uid);
+		if (copy_from_user(&sc_msg, (void *)arg, sizeof(sc_msg)))
 			return -EFAULT;
 		ret = al5d_user_search_start_code(user, &sc_msg);
-		if (copy_to_user((void*)arg, &sc_msg, sizeof(sc_msg)))
+		if (copy_to_user((void *)arg, &sc_msg, sizeof(sc_msg)))
 			return -EFAULT;
-		ioctl_info("end AL_MCU_SEARCH_START_CODE for user %i", user->uid);
+		ioctl_info("end AL_MCU_SEARCH_START_CODE for user %i",
+			   user->uid);
 		return ret;
 
 	case AL_MCU_WAIT_FOR_START_CODE:
-		ioctl_info("ioctl AL_MCU_WAIT_FOR_START_CODE from user %i", user->uid);
-		if (copy_from_user(&sc_status, (void*)arg, sizeof(sc_status)))
+		ioctl_info("ioctl AL_MCU_WAIT_FOR_START_CODE from user %i",
+			   user->uid);
+		if (copy_from_user(&sc_status, (void *)arg, sizeof(sc_status)))
 			return -EFAULT;
 		ret = al5d_user_wait_for_start_code(user, &sc_status);
-		if (copy_to_user((void*)arg, &sc_status, sizeof(sc_status)))
+		if (copy_to_user((void *)arg, &sc_status, sizeof(sc_status)))
 			return -EFAULT;
-		ioctl_info("end AL_MCU_WAIT_FOR_START_CODE for user %i", user->uid);
+		ioctl_info("end AL_MCU_WAIT_FOR_START_CODE for user %i",
+			   user->uid);
 		return ret;
 
 	case GET_DMA_FD:
@@ -169,25 +180,29 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 		ret = al5_ioctl_get_dmabuf_dma_addr(codec->device, arg);
 		return ret;
 
-		/* NSFProd */
+	/* NSFProd */
 	case AL_MCU_SET_TIMER_BUFFER:
-		ioctl_info("ioctl AL_MCU_SET_TIMER_BUFFER from user %i", user->uid);
+		ioctl_info("ioctl AL_MCU_SET_TIMER_BUFFER from user %i",
+			   user->uid);
 		if (!al5_chan_is_created(user))
 			return -EPERM;
 		ret = al5_set_timer_buffer(codec, user, arg);
-		ioctl_info("end AL_MCU_SET_TIMER_BUFFER for user %i", user->uid);
+		ioctl_info("end AL_MCU_SET_TIMER_BUFFER for user %i",
+			   user->uid);
 		return ret;
 
-		/* NSFProd */
+	/* NSFProd */
 	case AL_MCU_SET_IRQ_TIMER_BUFFER:
-		ioctl_info("ioctl AL_MCU_SET_IRQ_TIMER_BUFFER from user %i", user->uid);
+		ioctl_info("ioctl AL_MCU_SET_IRQ_TIMER_BUFFER from user %i",
+			   user->uid);
 		if (!al5_chan_is_created(user))
 			return -EPERM;
 		ret = al5_set_irq_timer_buffer(codec, user, arg);
-		ioctl_info("end AL_MCU_SET_IRQ_TIMER_BUFFER for user %i", user->uid);
+		ioctl_info("end AL_MCU_SET_IRQ_TIMER_BUFFER for user %i",
+			   user->uid);
 		return ret;
 
-		/* NSFProd */
+	/* NSFProd */
 	case MAIL_TESTS:
 		return al5_mail_tests(user, arg);
 
@@ -199,11 +214,11 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 }
 
 static const struct file_operations al5d_fops = {
-	.owner = THIS_MODULE,
-	.open = al5_codec_open,
-	.release = al5_codec_release,
+	.owner		= THIS_MODULE,
+	.open		= al5_codec_open,
+	.release	= al5_codec_release,
 	.unlocked_ioctl = al5d_ioctl,
-	.compat_ioctl = al5_codec_compat_ioctl,
+	.compat_ioctl	= al5_codec_compat_ioctl,
 };
 
 static int al5d_setup_codec_cdev(struct al5_codec_desc *codec, int index)
@@ -212,18 +227,21 @@ static int al5d_setup_codec_cdev(struct al5_codec_desc *codec, int index)
 	dev_t dev = MKDEV(al5d_codec_major, al5d_codec_minor);
 
 	int err = al5_setup_codec_cdev(codec, &al5d_fops, THIS_MODULE,
-				    al5d_codec_major, al5d_codec_minor + index);
-        if (err)
-                return err;
+				       al5d_codec_major,
+				       al5d_codec_minor + index);
 
-        device = device_create(module_class, NULL, dev, NULL, "allegroDecodeIP");
-        if (IS_ERR(device)) {
-                pr_err("device not created\n");
-                al5_clean_up_codec_cdev(codec);
-                return PTR_ERR(device);
-        }
+	if (err)
+		return err;
 
-        return 0;
+	device = device_create(module_class, NULL, dev, NULL,
+			       "allegroDecodeIP");
+	if (IS_ERR(device)) {
+		pr_err("device not created\n");
+		al5_clean_up_codec_cdev(codec);
+		return PTR_ERR(device);
+	}
+
+	return 0;
 }
 
 static int al5d_codec_probe(struct platform_device *pdev)
@@ -232,6 +250,7 @@ static int al5d_codec_probe(struct platform_device *pdev)
 	static int index;
 
 	struct al5_codec_desc *codec;
+
 	codec = devm_kzalloc(&pdev->dev,
 			     sizeof(struct al5_codec_desc),
 			     GFP_KERNEL);
@@ -243,7 +262,8 @@ static int al5d_codec_probe(struct platform_device *pdev)
 		pr_err("Failed to setup codec");
 		return err;
 	}
-	err = al5_codec_set_firmware(codec, AL5D_FIRMWARE, AL5D_BOOTLOADER_FIRMWARE);
+	err = al5_codec_set_firmware(codec, AL5D_FIRMWARE,
+				     AL5D_BOOTLOADER_FIRMWARE);
 	if (err) {
 		pr_err("Failed to setup firmware");
 		al5_codec_tear_down(codec);
@@ -263,27 +283,27 @@ static int al5d_codec_probe(struct platform_device *pdev)
 static int al5d_codec_remove(struct platform_device *pdev)
 {
 	struct al5_codec_desc *codec = platform_get_drvdata(pdev);
-        dev_t dev = MKDEV(al5d_codec_major, al5d_codec_minor);
+	dev_t dev = MKDEV(al5d_codec_major, al5d_codec_minor);
 
 	al5_codec_tear_down(codec);
-        device_destroy(module_class, dev);
+	device_destroy(module_class, dev);
 	al5_clean_up_codec_cdev(codec);
 
 	return 0;
 }
 
 static const struct of_device_id al5d_codec_of_match[] = {
-	{.compatible = "al,al5d"},
+	{ .compatible = "al,al5d" },
 	{ /* sentinel */ },
 };
 
 MODULE_DEVICE_TABLE(of, al5d_codec_of_match);
 
 static struct platform_driver al5d_platform_driver = {
-	.probe = al5d_codec_probe,
-	.remove = al5d_codec_remove,
-	.driver =	{
-		.name = "al5d",
+	.probe			= al5d_codec_probe,
+	.remove			= al5d_codec_remove,
+	.driver			=       {
+		.name		= "al5d",
 		.of_match_table = of_match_ptr(al5d_codec_of_match),
 	},
 };
@@ -291,21 +311,21 @@ static struct platform_driver al5d_platform_driver = {
 static int setup_chrdev_region(void)
 {
 	return al5_setup_chrdev_region(&al5d_codec_major, al5d_codec_minor,
-				     al5d_codec_nr_devs, "al5d");
+				       al5d_codec_nr_devs, "al5d");
 }
 
 static int create_module_class(void)
 {
-        module_class = class_create(THIS_MODULE, "allegro_decode_class");
-        if (IS_ERR(module_class))
-                return PTR_ERR(module_class);
+	module_class = class_create(THIS_MODULE, "allegro_decode_class");
+	if (IS_ERR(module_class))
+		return PTR_ERR(module_class);
 
-        return 0;
+	return 0;
 }
 
 static void destroy_module_class(void)
 {
-        class_destroy(module_class);
+	class_destroy(module_class);
 }
 
 static int __init al5d_codec_init(void)
@@ -316,9 +336,9 @@ static int __init al5d_codec_init(void)
 	if (err)
 		return err;
 
-        err = create_module_class();
-        if (err)
-                return err;
+	err = create_module_class();
+	if (err)
+		return err;
 
 	return platform_driver_register(&al5d_platform_driver);
 }
@@ -326,6 +346,7 @@ static int __init al5d_codec_init(void)
 static void __exit al5d_codec_exit(void)
 {
 	dev_t devno = MKDEV(al5d_codec_major, al5d_codec_minor);
+
 	platform_driver_unregister(&al5d_platform_driver);
 	destroy_module_class();
 	unregister_chrdev_region(devno, al5d_codec_nr_devs);

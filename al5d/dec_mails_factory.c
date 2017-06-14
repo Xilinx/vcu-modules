@@ -37,7 +37,8 @@ void al5d_mail_get_status(struct al5_params *status, struct al5_mail *mail)
 }
 
 /* *msg is filled, *mail is read-only */
-void al5d_mail_get_sc_status(struct al5_scstatus *scstatus, struct al5_mail *mail)
+void al5d_mail_get_sc_status(struct al5_scstatus *scstatus,
+			     struct al5_mail *mail)
 {
 	memcpy(scstatus, mail->body + 4, sizeof(*scstatus));
 }
@@ -45,8 +46,11 @@ void al5d_mail_get_sc_status(struct al5_scstatus *scstatus, struct al5_mail *mai
 struct al5_mail *
 al5d_create_decode_one_frame_msg(u32 chan_uid, struct al5_decode_msg *msg)
 {
-	int mail_size = 4 + msg->params.size + msg->addresses.size + sizeof(msg->slice_param_v);
-	struct al5_mail * mail = al5_mail_create(AL_MCU_MSG_DECODE_ONE_FRM, mail_size);
+	int mail_size = 4 + msg->params.size + msg->addresses.size +
+			sizeof(msg->slice_param_v);
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_DECODE_ONE_FRM,
+						mail_size);
+
 	al5_mail_write_word(mail, chan_uid);
 	al5_mail_write(mail, msg->params.opaque, msg->params.size);
 	al5_mail_write(mail, msg->addresses.opaque, msg->addresses.size);
@@ -58,21 +62,25 @@ al5d_create_decode_one_frame_msg(u32 chan_uid, struct al5_decode_msg *msg)
 struct al5_mail *
 al5d_create_channel_param_msg(u32 user_uid, struct al5_params *msg)
 {
-        int mail_size = 4 + msg->size;
-        struct al5_mail * mail = al5_mail_create(AL_MCU_MSG_CREATE_CHANNEL, mail_size);
-        al5_mail_write_word(mail, user_uid);
-        al5_mail_write(mail, msg->opaque, msg->size);
-        return mail;
+	int mail_size = 4 + msg->size;
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_CREATE_CHANNEL,
+						mail_size);
+
+	al5_mail_write_word(mail, user_uid);
+	al5_mail_write(mail, msg->opaque, msg->size);
+	return mail;
 }
 
 struct al5_mail *
 al5d_create_search_sc_mail(u32 user_uid, struct al5_search_sc_msg *msg)
 {
-        int mail_size = 4 + msg->param.size + msg->buffer_addrs.size;
-        struct al5_mail * mail = al5_mail_create(AL_MCU_MSG_SEARCH_START_CODE, mail_size);
-        al5_mail_write_word(mail, user_uid);
-        al5_mail_write(mail, msg->param.opaque, msg->param.size);
-        al5_mail_write(mail, msg->buffer_addrs.opaque, msg->buffer_addrs.size);
+	int mail_size = 4 + msg->param.size + msg->buffer_addrs.size;
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_SEARCH_START_CODE,
+						mail_size);
 
-        return mail;
+	al5_mail_write_word(mail, user_uid);
+	al5_mail_write(mail, msg->param.opaque, msg->param.size);
+	al5_mail_write(mail, msg->buffer_addrs.opaque, msg->buffer_addrs.size);
+
+	return mail;
 }

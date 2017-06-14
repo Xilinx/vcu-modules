@@ -13,7 +13,7 @@ MODULE_AUTHOR("Sebastien Alaiwan");
 MODULE_AUTHOR("Antoine Gruzelle");
 MODULE_DESCRIPTION("Allegro Common");
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
+#if KERNEL_VERSION(4, 1, 0) > LINUX_VERSION_CODE
 #define AL_DMA_BUF_4_0_COMPAT
 #define AL_DMA_BUF_COMPAT
 
@@ -32,21 +32,22 @@ struct dma_buf_export_info {
 #undef dma_buf_export
 static struct dma_buf *dma_buf_export(const struct dma_buf_export_info *i);
 
-#elif LINUX_VERSION_CODE < KERNEL_VERSION(4,2,0)
+#elif KERNEL_VERSION(4, 2, 0) > LINUX_VERSION_CODE
 #define AL_DMA_BUF_4_1_COMPAT
 #define AL_DMA_BUF_COMPAT
 
 #endif
 
-#if LINUX_VERSION_CODE < KERNEL_VERSION(4,1,0)
+#if KERNEL_VERSION(4, 1, 0) > LINUX_VERSION_CODE
 static struct dma_buf *dma_buf_export(const struct dma_buf_export_info *i)
 {
-	return __compat_dma_buf_export(i->priv, i->ops, i->size, i->flags, i->resv);
+	return __compat_dma_buf_export(i->priv, i->ops, i->size, i->flags,
+				       i->resv);
 }
 #endif
 
 struct al5_dmabuf_priv {
-        struct al5_dma_buffer *buffer;
+	struct al5_dma_buffer *buffer;
 
 	/* DMABUF related */
 	struct device *dev;
@@ -61,7 +62,7 @@ struct al5_dmabuf_attachment {
 };
 
 static int al5_dmabuf_attach(struct dma_buf *dbuf, struct device *dev,
-	struct dma_buf_attachment *dbuf_attach)
+			     struct dma_buf_attachment *dbuf_attach)
 {
 	struct al5_dmabuf_priv *dinfo = dbuf->priv;
 
@@ -100,7 +101,7 @@ static int al5_dmabuf_attach(struct dma_buf *dbuf, struct device *dev,
 }
 
 static void al5_dmabuf_detach(struct dma_buf *dbuf,
-	struct dma_buf_attachment *db_attach)
+			      struct dma_buf_attachment *db_attach)
 {
 	struct al5_dmabuf_attachment *attach = db_attach->priv;
 	struct sg_table *sgt;
@@ -112,7 +113,8 @@ static void al5_dmabuf_detach(struct dma_buf *dbuf,
 
 	/* release the scatterlist cache */
 	if (attach->dma_dir != DMA_NONE)
-		dma_unmap_sg(db_attach->dev, sgt->sgl, sgt->orig_nents, attach->dma_dir);
+		dma_unmap_sg(db_attach->dev, sgt->sgl, sgt->orig_nents,
+			     attach->dma_dir);
 
 	sg_free_table(sgt);
 	kfree(attach);
@@ -120,7 +122,7 @@ static void al5_dmabuf_detach(struct dma_buf *dbuf,
 }
 
 static struct sg_table *al5_dmabuf_map(struct dma_buf_attachment *db_attach,
-				enum dma_data_direction dma_dir)
+				       enum dma_data_direction dma_dir)
 {
 	struct al5_dmabuf_attachment *attach = db_attach->priv;
 	struct sg_table *sgt;
@@ -136,11 +138,13 @@ static struct sg_table *al5_dmabuf_map(struct dma_buf_attachment *db_attach,
 	}
 
 	if (attach->dma_dir != DMA_NONE) {
-		dma_unmap_sg(db_attach->dev, sgt->sgl, sgt->orig_nents, attach->dma_dir);
+		dma_unmap_sg(db_attach->dev, sgt->sgl, sgt->orig_nents,
+			     attach->dma_dir);
 		attach->dma_dir = DMA_NONE;
 	}
 
-	sgt->nents = dma_map_sg(db_attach->dev, sgt->sgl, sgt->orig_nents, dma_dir);
+	sgt->nents = dma_map_sg(db_attach->dev, sgt->sgl, sgt->orig_nents,
+				dma_dir);
 
 	if (!sgt->nents) {
 		pr_err("failed to map scatterlist\n");
@@ -156,7 +160,7 @@ static struct sg_table *al5_dmabuf_map(struct dma_buf_attachment *db_attach,
 }
 
 static void al5_dmabuf_unmap(struct dma_buf_attachment *at,
-		struct sg_table *sg, enum dma_data_direction dir)
+			     struct sg_table *sg, enum dma_data_direction dir)
 {
 }
 
@@ -176,7 +180,7 @@ static int al5_dmabuf_mmap(struct dma_buf *buf, struct vm_area_struct *vma)
 	vma->vm_pgoff = 0;
 
 	ret = dma_mmap_coherent(dinfo->dev, vma, buffer->cpu_handle,
-		       	buffer->dma_handle, vsize);
+				buffer->dma_handle, vsize);
 
 	if (ret < 0) {
 		pr_err("Remapping memory failed, error: %d\n", ret);
@@ -224,20 +228,20 @@ static void *al5_dmabuf_vmap(struct dma_buf *dbuf)
 }
 
 static const struct dma_buf_ops al5_dmabuf_ops = {
-	.attach = al5_dmabuf_attach,
-	.detach = al5_dmabuf_detach,
-	.map_dma_buf = al5_dmabuf_map,
-	.unmap_dma_buf = al5_dmabuf_unmap,
-	.kmap_atomic = al5_dmabuf_kmap,
-	.kmap = al5_dmabuf_kmap,
-	.vmap = al5_dmabuf_vmap,
-	.mmap = al5_dmabuf_mmap,
-	.release = al5_dmabuf_release,
+	.attach		= al5_dmabuf_attach,
+	.detach		= al5_dmabuf_detach,
+	.map_dma_buf	= al5_dmabuf_map,
+	.unmap_dma_buf	= al5_dmabuf_unmap,
+	.kmap_atomic	= al5_dmabuf_kmap,
+	.kmap		= al5_dmabuf_kmap,
+	.vmap		= al5_dmabuf_vmap,
+	.mmap		= al5_dmabuf_mmap,
+	.release	= al5_dmabuf_release,
 };
 
 static void define_export_info(struct dma_buf_export_info *exp_info,
-			int size,
-			void *priv)
+			       int size,
+			       void *priv)
 {
 #ifndef AL_DMA_BUF_COMPAT
 	exp_info->owner = THIS_MODULE;
@@ -258,12 +262,11 @@ static struct sg_table *al5_get_base_sgt(struct al5_dmabuf_priv *dinfo)
 	struct device *dev = dinfo->dev;
 
 	sgt = kzalloc(sizeof(*sgt), GFP_KERNEL);
-	if (!sgt) {
+	if (!sgt)
 		return NULL;
-	}
 
 	ret = dma_get_sgtable(dev, sgt, buf->cpu_handle, buf->dma_handle,
-		       	buf->size);
+			      buf->size);
 	if (ret < 0) {
 		kfree(sgt);
 		return NULL;
@@ -283,8 +286,8 @@ static struct dma_buf *al5_get_dmabuf(void *dma_info_priv)
 	struct al5_dma_buffer *buf = dinfo->buffer;
 
 	define_export_info(&exp_info,
-			buf->size,
-			(void *) dinfo);
+			   buf->size,
+			   (void *)dinfo);
 
 	if (!dinfo->sgt_base)
 		dinfo->sgt_base = al5_get_base_sgt(dinfo);
@@ -301,15 +304,15 @@ static struct dma_buf *al5_get_dmabuf(void *dma_info_priv)
 	return dbuf;
 }
 
-static void *al5_dmabuf_wrap(struct device *dev, unsigned long size, struct al5_dma_buffer *buffer)
+static void *al5_dmabuf_wrap(struct device *dev, unsigned long size,
+			     struct al5_dma_buffer *buffer)
 {
 	struct al5_dmabuf_priv *dinfo;
 	struct dma_buf *dbuf;
 
 	dinfo = kzalloc(sizeof(*dinfo), GFP_KERNEL);
-	if (!dinfo) {
+	if (!dinfo)
 		return ERR_PTR(-ENOMEM);
-	}
 
 	dinfo->dev = get_device(dev);
 	dinfo->buffer = buffer;
@@ -323,9 +326,11 @@ static void *al5_dmabuf_wrap(struct device *dev, unsigned long size, struct al5_
 	return dbuf;
 }
 
-int al5_create_dmabuf_fd(struct device *dev, unsigned long size, struct al5_dma_buffer *buffer)
+int al5_create_dmabuf_fd(struct device *dev, unsigned long size,
+			 struct al5_dma_buffer *buffer)
 {
 	struct dma_buf *dbuf = al5_dmabuf_wrap(dev, size, buffer);
+
 	if (IS_ERR(dbuf))
 		return PTR_ERR(dbuf);
 	return dma_buf_fd(dbuf, O_RDWR);

@@ -31,7 +31,7 @@ irqreturn_t al5_hardirq_handler(int irq, void *data)
 	u32 irq_status = al5_readl(AL5_MCU_IRQ_STA);
 
 	if (irq_status == 0)
-                return IRQ_NONE;
+		return IRQ_NONE;
 
 	al5_writel(irq_status, AL5_MCU_INTERRUPT_CLR);
 

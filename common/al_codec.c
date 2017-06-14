@@ -56,20 +56,18 @@ static void set_dcache_offset(struct al5_codec_desc *codec)
 }
 
 static int copy_firmware(struct al5_codec_desc *codec,
-			    const struct firmware *fw,
-			    const struct firmware *bl_fw)
+			 const struct firmware *fw,
+			 const struct firmware *bl_fw)
 {
 	setup_info("firmware size is %zx\n", fw->size);
 	setup_info("bootloader firmware size is %zx\n", bl_fw->size);
 
-	if (fw->size > AL5_ICACHE_SIZE)
-	{
+	if (fw->size > AL5_ICACHE_SIZE) {
 		al5_err("firmware is too big\n");
 		return -EINVAL;
 	}
 
-	if (bl_fw->size > MCU_SRAM_SIZE)
-	{
+	if (bl_fw->size > MCU_SRAM_SIZE) {
 		al5_err("bootloader firmware is too big\n");
 		return -EINVAL;
 	}
@@ -112,16 +110,17 @@ static void start_mcu(struct al5_codec_desc *codec)
 
 static void set_mcu_interrupt_mask(struct al5_codec_desc *codec)
 {
-    al5_writel(1, AL5_MCU_INTERRUPT_MASK);
+	al5_writel(1, AL5_MCU_INTERRUPT_MASK);
 }
 
 static int request_all_firmwares(struct al5_codec_desc *codec,
-				const struct firmware **fw,
-				const struct firmware **bl_fw,
-				char *fw_file,
-				char *bl_fw_file)
+				 const struct firmware **fw,
+				 const struct firmware **bl_fw,
+				 char *fw_file,
+				 char *bl_fw_file)
 {
 	int err;
+
 	err = request_firmware(fw, fw_file, codec->device);
 	if (err) {
 		al5_err("firmware file '%s' not found\n", fw_file);
@@ -130,11 +129,12 @@ static int request_all_firmwares(struct al5_codec_desc *codec,
 
 	err = request_firmware(bl_fw, bl_fw_file, codec->device);
 	if (err) {
-		al5_err("bootloader firmware file '%s' not found\n", bl_fw_file);
+		al5_err("bootloader firmware file '%s' not found\n",
+			bl_fw_file);
 		goto out_failed_firmware;
 	}
 
-    return 0;
+	return 0;
 
 out_failed_firmware:
 	release_firmware(*fw);
@@ -144,8 +144,8 @@ out_failed:
 }
 
 static int setup_and_start_mcu(struct al5_codec_desc *codec,
-			    const struct firmware *fw,
-			    const struct firmware *bl_fw)
+			       const struct firmware *fw,
+			       const struct firmware *bl_fw)
 {
 	int ret;
 
@@ -170,9 +170,8 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 {
 	/* alloc the icache and the dcache */
 	codec->icache = al5_alloc_dma(codec->device, AL5_ICACHE_SIZE);
-	if (!codec->icache) {
+	if (!codec->icache)
 		return -ENOMEM;
-	}
 
 	/* dcache map base addr */
 
@@ -183,9 +182,12 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 	return 0;
 }
 
-static void set_mcu_frequency_hack_addr(struct al5_codec_desc *codec, struct mcu_init_msg *init_msg)
+static void set_mcu_frequency_hack_addr(struct al5_codec_desc *codec,
+					struct mcu_init_msg *init_msg)
 {
-	init_msg->frequency_hack_addr = codec->icache->dma_handle - codec->dcache_base_addr + MCU_CACHE_OFFSET;
+	init_msg->frequency_hack_addr = codec->icache->dma_handle -
+					codec->dcache_base_addr +
+					MCU_CACHE_OFFSET;
 }
 
 #define AL5_FREQUENCY_HACK_ADDR_LSB 0x8130
@@ -195,11 +197,13 @@ static void set_hw_frequency_hack(struct al5_codec_desc *codec)
 	dma_addr_t dma_handle = codec->icache->dma_handle;
 	u32 icache_addr_lsb = (u32)dma_handle;
 	u32 icache_addr_msb = (sizeof(dma_handle) == 4) ? 0 : dma_handle >> 32;
+
 	al5_writel(icache_addr_lsb, AL5_FREQUENCY_HACK_ADDR_LSB);
 	al5_writel(icache_addr_msb, AL5_FREQUENCY_HACK_ADDR_MSB);
 }
 
-static void set_frequency_hack(struct al5_codec_desc *codec, struct mcu_init_msg *init_msg)
+static void set_frequency_hack(struct al5_codec_desc *codec,
+			       struct mcu_init_msg *init_msg)
 {
 	set_mcu_frequency_hack_addr(codec, init_msg);
 	set_hw_frequency_hack(codec);
@@ -211,8 +215,9 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	struct mcu_init_msg init_msg;
 	struct al5_mail *feedback;
 
-	codec->suballoc_buf = al5_alloc_dma(codec->device, MCU_SUBALLOCATOR_SIZE );
-	if(!codec->suballoc_buf) {
+	codec->suballoc_buf =
+		al5_alloc_dma(codec->device, MCU_SUBALLOCATOR_SIZE);
+	if (!codec->suballoc_buf) {
 		err = -ENOMEM;
 		goto fail_alloc;
 	}
@@ -257,16 +262,16 @@ fail_alloc:
 
 int al5_codec_open(struct inode *inode, struct file *filp)
 {
-	struct al5_filp_data *private_data = kzalloc(sizeof(*private_data), GFP_KERNEL);
+	struct al5_filp_data *private_data = kzalloc(sizeof(*private_data),
+						     GFP_KERNEL);
 	struct al5_user *user;
 	struct al5_codec_desc *codec;
 	int err;
 
 	user = kzalloc(sizeof(*user), GFP_KERNEL);
-	if (!user) {
+	if (!user)
 		return -ENOMEM;
-	}
-        codec = container_of(inode->i_cdev, struct al5_codec_desc, cdev);
+	codec = container_of(inode->i_cdev, struct al5_codec_desc, cdev);
 
 	err = al5_group_bind_user(&codec->users_group, user);
 	if (err) {
@@ -289,7 +294,8 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 	struct al5_codec_desc *codec = private_data->codec;
 
 	if (al5_chan_is_created(user)) {
-		int quiet = 1;
+		const int quiet = 1;
+
 		al5_user_destroy_channel(user, quiet);
 	}
 	al5_group_unbind_user(&codec->users_group, user);
@@ -300,7 +306,8 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 }
 EXPORT_SYMBOL_GPL(al5_codec_release);
 
-int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file, char *bl_fw_file)
+int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
+			   char *bl_fw_file)
 {
 	const struct firmware *fw = NULL;
 	const struct firmware *bl_fw = NULL;
@@ -378,7 +385,8 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	config.status_base = (unsigned long)codec->regs + MAILBOX_STATUS;
 	config.status_size = MAILBOX_SIZE;
 
-	err = al5_mcu_interface_create(&mcu, codec->device, &config, codec->regs + AL5_MCU_INTERRUPT);
+	err = al5_mcu_interface_create(&mcu, codec->device, &config,
+				       codec->regs + AL5_MCU_INTERRUPT);
 	if (err)
 		goto fail;
 
@@ -424,7 +432,7 @@ void al5_codec_tear_down(struct al5_codec_desc *codec)
 EXPORT_SYMBOL_GPL(al5_codec_tear_down);
 
 long al5_codec_compat_ioctl(struct file *file, unsigned int cmd,
-				       unsigned long arg)
+			    unsigned long arg)
 {
 	long ret = -ENOIOCTLCMD;
 

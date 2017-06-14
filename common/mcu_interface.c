@@ -26,21 +26,25 @@
 #include <linux/printk.h>
 
 int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
-	     struct device *device,
-	     struct mcu_mailbox_config *config,
-	     void *mcu_interrupt_register)
+			     struct device *device,
+			     struct mcu_mailbox_config *config,
+			     void *mcu_interrupt_register)
 {
 	*mcu = devm_kmalloc(device, sizeof(*mcu), GFP_KERNEL);
-	(*mcu)->mcu_to_cpu = devm_kmalloc(device, sizeof(struct mailbox), GFP_KERNEL);
+	(*mcu)->mcu_to_cpu = devm_kmalloc(device, sizeof(struct mailbox),
+					  GFP_KERNEL);
 	if (!(*mcu)->mcu_to_cpu)
 		return -ENOMEM;
 
-	(*mcu)->cpu_to_mcu = devm_kmalloc(device, sizeof(struct mailbox), GFP_KERNEL);
+	(*mcu)->cpu_to_mcu = devm_kmalloc(device, sizeof(struct mailbox),
+					  GFP_KERNEL);
 	if (!(*mcu)->cpu_to_mcu)
 		return -ENOMEM;
 
-	al5_mailbox_init((*mcu)->cpu_to_mcu, (void*)config->cmd_base, config->cmd_size);
-	al5_mailbox_init((*mcu)->mcu_to_cpu, (void*)config->status_base, config->status_size);
+	al5_mailbox_init((*mcu)->cpu_to_mcu, (void *)config->cmd_base,
+			 config->cmd_size);
+	al5_mailbox_init((*mcu)->mcu_to_cpu, (void *)config->status_base,
+			 config->status_size);
 	spin_lock_init(&(*mcu)->read_lock);
 	spin_lock_init(&(*mcu)->write_lock);
 	(*mcu)->interrupt_register = mcu_interrupt_register;
@@ -49,7 +53,8 @@ int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
 }
 EXPORT_SYMBOL_GPL(al5_mcu_interface_create);
 
-void al5_mcu_interface_destroy(struct mcu_mailbox_interface *mcu, struct device *device)
+void al5_mcu_interface_destroy(struct mcu_mailbox_interface *mcu,
+			       struct device *device)
 {
 	devm_kfree(device, mcu->mcu_to_cpu);
 	devm_kfree(device, mcu->cpu_to_mcu);
@@ -91,6 +96,7 @@ int al5_mcu_is_empty(struct mcu_mailbox_interface *mcu)
 	struct mailbox *mailbox = mcu->mcu_to_cpu;
 	u32 head_value = ioread32(mailbox->head);
 	u32 tail_value = ioread32(mailbox->tail);
+
 	return head_value == tail_value;
 }
 EXPORT_SYMBOL_GPL(al5_mcu_is_empty);

@@ -33,28 +33,30 @@ int al5_list_empty(const struct al5_list *l)
 void al5_list_push(struct al5_list **l, struct al5_mail *mail)
 {
 	struct al5_list *first_pos = *l;
+
 	if (*l == NULL) {
 		*l = kmalloc(sizeof(**l), GFP_KERNEL);
 		(*l)->mail = mail;
 		(*l)->next = NULL;
 		return;
 	}
-	while ((*l)->next != NULL) {
+	while ((*l)->next != NULL)
 		*l = (*l)->next;
-	}
 	(*l)->next = kmalloc(sizeof(*((*l)->next)), GFP_KERNEL);
 	(*l)->next->mail = mail;
 	(*l)->next->next = NULL;
 	*l = first_pos;
 }
 
-struct al5_mail * al5_list_pop(struct al5_list **l)
+struct al5_mail *al5_list_pop(struct al5_list **l)
 {
-	if (*l == NULL) {
+	if (*l == NULL)
 		return NULL;
-	} else {
+
+	{
 		struct al5_mail *ret = (*l)->mail;
 		struct al5_list *next = (*l)->next;
+
 		kfree(*l);
 		*l = next;
 		return ret;
@@ -63,8 +65,9 @@ struct al5_mail * al5_list_pop(struct al5_list **l)
 
 void al5_list_empty_and_destroy(struct al5_list **l)
 {
-	while(!al5_list_empty(*l)) {
-		struct al5_mail * mail = al5_list_pop(l);
+	while (!al5_list_empty(*l)) {
+		struct al5_mail *mail = al5_list_pop(l);
+
 		al5_free_mail(mail);
 	}
 	kfree(*l);

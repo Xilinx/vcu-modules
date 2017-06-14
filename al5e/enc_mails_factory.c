@@ -23,19 +23,25 @@
 
 #include "enc_mails_factory.h"
 
-void al5e_mail_get_status(struct al5_encode_status *status, struct al5_mail *mail)
+void al5e_mail_get_status(struct al5_encode_status *status,
+			  struct al5_mail *mail)
 {
 	memcpy(&status->stream_buffer_ptr, al5_mail_get_body(mail) + 4, 8);
-	memcpy(&status->pic_status, al5_mail_get_body(mail) + 12, sizeof(status->pic_status));
+	memcpy(&status->pic_status, al5_mail_get_body(mail) + 12,
+	       sizeof(status->pic_status));
 }
 
-struct al5_mail *al5e_create_encode_one_frame_msg(u32 chan_uid, struct al5_encode_msg *msg)
+struct al5_mail *al5e_create_encode_one_frame_msg(u32 chan_uid,
+						  struct al5_encode_msg *msg)
 {
-	return al5_create_classic_mail(chan_uid, AL_MCU_MSG_ENCODE_ONE_FRM, msg, sizeof(*msg));
+	return al5_create_classic_mail(chan_uid, AL_MCU_MSG_ENCODE_ONE_FRM, msg,
+				       sizeof(*msg));
 }
 
-struct al5_mail *al5e_create_channel_param_msg(u32 user_uid, struct al5_channel_param *msg)
+struct al5_mail *al5e_create_channel_param_msg(u32 user_uid,
+					       struct al5_channel_param *msg)
 {
-	return al5_create_classic_mail(user_uid, AL_MCU_MSG_CREATE_CHANNEL, msg->opaque_params, msg->size);
+	return al5_create_classic_mail(user_uid, AL_MCU_MSG_CREATE_CHANNEL,
+				       msg->opaque_params, msg->size);
 }
 

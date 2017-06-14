@@ -72,7 +72,7 @@ static void read_in_mailbox_until_wrap(struct mailbox *box,
 	*data += space_left_before_wrapping;
 }
 
-void al5_mailbox_init(struct mailbox *box, void* base, size_t data_size)
+void al5_mailbox_init(struct mailbox *box, void *base, size_t data_size)
 {
 	box->size = data_size;
 	box->head = base;
@@ -88,7 +88,7 @@ static u16 unserialize_msg_uid(u8 *header)
 	return header[2] + (header[3] << 8);
 }
 
-static u16 unserialize_body_size(u8 * header)
+static u16 unserialize_body_size(u8 *header)
 {
 	return header[0] + (header[1] << 8);
 }
@@ -115,6 +115,7 @@ static void push_tail(struct mailbox *box)
 static void write_data(struct mailbox *box, u8 *in_data, size_t size)
 {
 	u32 tail_value = box->local_tail;
+
 	if (mailbox_is_wrapping(box->size, tail_value, size))
 		write_in_mailbox_until_wrap(box,
 					    &size,
@@ -126,13 +127,15 @@ static void write_data(struct mailbox *box, u8 *in_data, size_t size)
 	box->local_tail = tail_value;
 }
 
-static u8* read_data(struct mailbox *box, size_t size)
+static u8 *read_data(struct mailbox *box, size_t size)
 {
-	u8* out_data = kzalloc(size, GFP_KERNEL);
+	u8 *out_data = kzalloc(size, GFP_KERNEL);
 	u32 head_value = ioread32(box->head);
 	u8 *data_iterator = out_data;
+
 	if (mailbox_is_wrapping(box->size, head_value, size))
-		read_in_mailbox_until_wrap(box, &size, &head_value, &data_iterator);
+		read_in_mailbox_until_wrap(box, &size, &head_value,
+					   &data_iterator);
 	memcpy_fromio_32(data_iterator, box->data + head_value, size);
 
 	head_value = ((head_value + size + 3) / 4 * 4) % box->size;
@@ -167,7 +170,7 @@ int al5_mailbox_write(struct mailbox *box, struct al5_mail *mail)
 }
 EXPORT_SYMBOL_GPL(al5_mailbox_write);
 
-struct al5_mail * al5_mailbox_read(struct mailbox *box)
+struct al5_mail *al5_mailbox_read(struct mailbox *box)
 {
 	u8 *header = read_data(box, header_size);
 	u16 msg_uid = unserialize_msg_uid(header);
@@ -175,6 +178,7 @@ struct al5_mail * al5_mailbox_read(struct mailbox *box)
 	struct al5_mail *mail = al5_mail_create(msg_uid, body_size);
 
 	u8 *body = read_data(box, body_size);
+
 	al5_mail_write(mail, body, body_size);
 
 	kfree(header);

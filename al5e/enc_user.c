@@ -30,15 +30,16 @@
 #include "al_alloc.h"
 #include "al_buffers_pool.h"
 
-static void update_chan_param(struct al5_channel_status *status, struct al5e_feedback_channel *message)
+static void update_chan_param(struct al5_channel_status *status,
+			      struct al5e_feedback_channel *message)
 {
 	status->options = message->options;
-	status->num_core = (u8) message->num_core;
+	status->num_core = (u8)message->num_core;
 	status->pps_param = message->pps_param;
 	status->error_code = message->error_code;
 }
 
-static int check_and_affect_chan_uid(struct al5_user * user, u32 chan_uid)
+static int check_and_affect_chan_uid(struct al5_user *user, u32 chan_uid)
 {
 	if (chan_uid == BAD_CHAN)
 		return -EINVAL;
@@ -47,59 +48,77 @@ static int check_and_affect_chan_uid(struct al5_user * user, u32 chan_uid)
 	return 0;
 }
 
-static struct al5_mail * create_mail_from_bufpool(u32 msg_uid, u32 chan_uid, struct al5_buffers_pool bufpool)
+static struct al5_mail *create_mail_from_bufpool(u32 msg_uid, u32 chan_uid,
+						 struct al5_buffers_pool bufpool)
 {
-	struct al5_mail * mail;
+	struct al5_mail *mail;
 	int i;
 	u32 size_per_buffer = 3 * sizeof(u32);
 	u32 content_size = bufpool.count * size_per_buffer;
+
 	mail = al5_mail_create(msg_uid, 4 + content_size);
 	al5_mail_write_word(mail, chan_uid);
 	for (i = 0; i < bufpool.count; i++) {
 		struct al5_dma_buffer *buffer = bufpool.buffers[i];
-		/* ip and mcu only support a 2G dma zone*/
+		u32 mcu_vaddr = al5_mcu_get_virtual_address(
+			(u32)(uintptr_t)buffer->dma_handle);
+		/* ip and mcu only support a 2G dma zone */
 		al5_mail_write_word(mail, (u32)(uintptr_t)buffer->dma_handle);
-		al5_mail_write_word(mail, al5_mcu_get_virtual_address((u32)(uintptr_t)buffer->dma_handle));
+		al5_mail_write_word(mail, mcu_vaddr);
 		al5_mail_write_word(mail, buffer->size);
 	}
 
 	return mail;
 }
 
-static int allocate_channel_buffers(struct al5_user *user, struct al5_channel_buffers buffers)
+static int allocate_channel_buffers(struct al5_user *user,
+				    struct al5_channel_buffers buffers)
 {
 	int err;
 	unsigned long pagesize = (1 << PAGE_SHIFT);
-	buffers.rec_buffers_size += pagesize - (buffers.rec_buffers_size % pagesize);
-	err = al5_bufpool_allocate(&user->int_buffers, user->device, buffers.int_buffers_count, buffers.int_buffers_size);
+
+	buffers.rec_buffers_size += pagesize -
+				    (buffers.rec_buffers_size % pagesize);
+	err = al5_bufpool_allocate(&user->int_buffers, user->device,
+				   buffers.int_buffers_count,
+				   buffers.int_buffers_size);
 	if (err)
 		return err;
-	err = al5_bufpool_allocate(&user->rec_buffers, user->device, buffers.rec_buffers_count, buffers.rec_buffers_size);
+	err = al5_bufpool_allocate(&user->rec_buffers, user->device,
+				   buffers.rec_buffers_count,
+				   buffers.rec_buffers_size);
 	if (err)
 		return err;
 
 	return 0;
 }
 
-static int send_intermediate_buffers(struct al5_user * user)
+static int send_intermediate_buffers(struct al5_user *user)
 {
 	struct al5_mail *mail;
-	mail = create_mail_from_bufpool(AL_MCU_MSG_PUSH_BUFFER_INTERMEDIATE, user->chan_uid, user->int_buffers);
+
+	mail = create_mail_from_bufpool(AL_MCU_MSG_PUSH_BUFFER_INTERMEDIATE,
+					user->chan_uid, user->int_buffers);
 	return al5_check_and_send(user, mail);
 }
 
-static int send_reference_buffers(struct al5_user * user)
+static int send_reference_buffers(struct al5_user *user)
 {
 	struct al5_mail *mail;
-	mail = create_mail_from_bufpool(AL_MCU_MSG_PUSH_BUFFER_REFERENCE, user->chan_uid, user->rec_buffers);
+
+	mail = create_mail_from_bufpool(AL_MCU_MSG_PUSH_BUFFER_REFERENCE,
+					user->chan_uid, user->rec_buffers);
 	return al5_check_and_send(user, mail);
 }
 
-int al5e_user_create_channel(struct al5_user *user, struct al5_channel_param *param, struct al5_channel_status *status)
+int al5e_user_create_channel(struct al5_user *user,
+			     struct al5_channel_param *param,
+			     struct al5_channel_status *status)
 {
 	struct al5_mail *feedback;
 	struct al5e_feedback_channel fb_message;
 	int err = mutex_lock_killable(&user->locks[AL5_USER_CREATE]);
+
 	if (err == -EINTR)
 		return err;
 
@@ -108,7 +127,8 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_channel_param *pa
 		goto fail;
 	}
 
-	err = al5_check_and_send(user, al5e_create_channel_param_msg(user->uid, param));
+	err = al5_check_and_send(user, al5e_create_channel_param_msg(user->uid,
+								     param));
 	if (err)
 		goto fail;
 
@@ -116,13 +136,14 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_channel_param *pa
 	if (feedback == NULL)
 		goto fail;
 
-	fb_message = *(struct al5e_feedback_channel*) al5_mail_get_body(feedback);
+	fb_message =
+		*(struct al5e_feedback_channel *)al5_mail_get_body(feedback);
 	al5_free_mail(feedback);
 	update_chan_param(status, &fb_message);
 
 	err = check_and_affect_chan_uid(user, fb_message.chan_uid);
-	if(err) {
-		pr_err("VCU failed to create channel, wrong configuration or the ressources are not available at the moment\n");
+	if (err) {
+		pr_err("VCU: unavailable resources or wrong configuration\n");
 		goto fail;
 	}
 
@@ -152,21 +173,26 @@ unlock:
 }
 EXPORT_SYMBOL_GPL(al5e_user_create_channel);
 
-int al5e_user_encode_one_frame(struct al5_user *user, struct al5_encode_msg *msg)
+int al5e_user_encode_one_frame(struct al5_user *user,
+			       struct al5_encode_msg *msg)
 {
 	int err = mutex_lock_killable(&user->locks[AL5_USER_XCODE]);
+
 	if (err == -EINTR)
 		return err;
 
 	if (!al5_chan_is_created(user)) {
-		pr_err("Cannot encode frame until channel is configured on MCU\n");
+		pr_err("Cannot encode frame until channel is configured\n");
 		err = -EPERM;
 		goto unlock;
 	}
 
-	msg->buffers_addrs.ep2v = al5_mcu_get_virtual_address(msg->buffers_addrs.ep2);
+	msg->buffers_addrs.ep2v = al5_mcu_get_virtual_address(
+		msg->buffers_addrs.ep2);
 
-	err = al5_check_and_send(user, al5e_create_encode_one_frame_msg(user->chan_uid, msg));
+	err = al5_check_and_send(user,
+				 al5e_create_encode_one_frame_msg(user->chan_uid,
+								  msg));
 
 unlock:
 	mutex_unlock(&user->locks[AL5_USER_XCODE]);
@@ -174,7 +200,8 @@ unlock:
 }
 EXPORT_SYMBOL_GPL(al5e_user_encode_one_frame);
 
-int al5e_user_wait_for_status(struct al5_user *user, struct al5_encode_status *msg)
+int al5e_user_wait_for_status(struct al5_user *user,
+			      struct al5_encode_status *msg)
 {
 	struct al5_mail *feedback;
 	int err = 0;
@@ -182,17 +209,16 @@ int al5e_user_wait_for_status(struct al5_user *user, struct al5_encode_status *m
 	if (!mutex_trylock(&user->locks[AL5_USER_STATUS]))
 		return -EINTR;
 
-	if(!al5_chan_is_created(user)) {
+	if (!al5_chan_is_created(user)) {
 		err = -EPERM;
 		goto unlock;
 	}
 
 	feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_STATUS]);
-	if (feedback) {
+	if (feedback)
 		al5e_mail_get_status(msg, feedback);
-	} else {
+	else
 		err = -EINTR;
-	}
 	al5_free_mail(feedback);
 
 unlock:
@@ -200,25 +226,29 @@ unlock:
 	return err;
 }
 
-int al5e_user_put_stream_buffer(struct al5_user *user, struct al5_buffer *buffer)
+int al5e_user_put_stream_buffer(struct al5_user *user,
+				struct al5_buffer *buffer)
 {
 	int error;
 	struct al5_buffer_info buffer_info;
 	struct al5_mail *mail;
-	if(!al5_chan_is_created(user))
+	u32 mcu_vaddr;
+
+	if (!al5_chan_is_created(user))
 		return -EPERM;
 
 	error = al5_get_dmabuf_info(user->device, buffer->handle, &buffer_info);
 	if (error)
 		return error;
 
-	if(buffer->size > buffer_info.size)
+	if (buffer->size > buffer_info.size)
 		return -EFAULT;
 
 	mail = al5_mail_create(AL_MCU_MSG_PUT_STREAM_BUFFER, 28);
 	al5_mail_write_word(mail, user->chan_uid);
 	al5_mail_write_word(mail, buffer_info.bus_address);
-	al5_mail_write_word(mail, al5_mcu_get_virtual_address(buffer_info.bus_address));
+	mcu_vaddr = al5_mcu_get_virtual_address(buffer_info.bus_address);
+	al5_mail_write_word(mail, mcu_vaddr);
 	al5_mail_write_word(mail, buffer->size);
 	al5_mail_write_word(mail, buffer->offset);
 	al5_mail_write(mail, &buffer->stream_buffer_ptr, 8);
@@ -228,7 +258,7 @@ int al5e_user_put_stream_buffer(struct al5_user *user, struct al5_buffer *buffer
 
 static int get_user_rec_buffer(struct al5_user *user, int id)
 {
-	if(id > user->rec_buffers.count || id < 0)
+	if (id > user->rec_buffers.count || id < 0)
 		return -1;
 	return user->rec_buffers.fds[id];
 }
@@ -242,12 +272,13 @@ int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)
 	if (!mutex_trylock(&user->locks[AL5_USER_REC]))
 		return -EINTR;
 
-	if(!al5_chan_is_created(user)) {
+	if (!al5_chan_is_created(user)) {
 		err = -EPERM;
 		goto unlock;
 	}
 
-	mail = al5_create_empty_mail(user->chan_uid, AL_MCU_MSG_GET_RECONSTRUCTED_PICTURE);
+	mail = al5_create_empty_mail(user->chan_uid,
+				     AL_MCU_MSG_GET_RECONSTRUCTED_PICTURE);
 
 	err = al5_check_and_send(user, mail);
 	if (err)
@@ -260,7 +291,7 @@ int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)
 	}
 
 	msg->fd = get_user_rec_buffer(user, al5_mail_get_word(feedback, 1));
-	if(msg->fd == -1) {
+	if (msg->fd == -1) {
 		err = -EINVAL;
 		goto unlock;
 	}
@@ -283,19 +314,20 @@ int al5e_user_release_rec(struct al5_user *user, u32 fd)
 	if (!mutex_trylock(&user->locks[AL5_USER_REC]))
 		return -EINTR;
 
-	if(!al5_chan_is_created(user)) {
+	if (!al5_chan_is_created(user)) {
 		err = -EPERM;
 		goto unlock;
 	}
 
 	id = al5_bufpool_get_id(&user->rec_buffers, fd);
-	if (id < 0)
-	{
+	if (id < 0) {
 		err = -EINVAL;
 		goto unlock;
 	}
 	uid = id;
-	mail = al5_create_classic_mail(user->chan_uid, AL_MCU_MSG_RELEASE_RECONSTRUCTED_PICTURE, &uid, sizeof(uid));
+	mail = al5_create_classic_mail(user->chan_uid,
+				       AL_MCU_MSG_RELEASE_RECONSTRUCTED_PICTURE,
+				       &uid, sizeof(uid));
 
 	err = al5_check_and_send(user, mail);
 unlock:

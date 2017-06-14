@@ -6,7 +6,8 @@
 #include "al_mail.h"
 #include "al_codec_mails.h"
 
-void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu, int max_users_nb, struct device * device)
+void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu,
+		    int max_users_nb, struct device *device)
 {
 	group->users = kcalloc(max_users_nb, sizeof(void *), GFP_KERNEL);
 	group->max_users_nb = max_users_nb;
@@ -27,13 +28,13 @@ int al5_group_bind_user(struct al5_group *group, struct al5_user *user)
 	int err = 0;
 	int i;
 
-        spin_lock_irqsave(&group->lock, flags);
-        for (i = 0; i < group->max_users_nb; ++i) {
-                if (group->users[i] == NULL) {
-                        uid = i;
-                        break;
-                }
-        }
+	spin_lock_irqsave(&group->lock, flags);
+	for (i = 0; i < group->max_users_nb; ++i) {
+		if (group->users[i] == NULL) {
+			uid = i;
+			break;
+		}
+	}
 	if (uid == -1) {
 		pr_err("Max user allocation reached\n");
 		err = -EAGAIN;
@@ -54,9 +55,9 @@ void al5_group_unbind_user(struct al5_group *group, struct al5_user *user)
 {
 	unsigned long flags = 0;
 
-        spin_lock_irqsave(&group->lock, flags);
-        group->users[user->uid] = NULL;
-        spin_unlock_irqrestore(&group->lock, flags);
+	spin_lock_irqsave(&group->lock, flags);
+	group->users[user->uid] = NULL;
+	spin_unlock_irqrestore(&group->lock, flags);
 }
 EXPORT_SYMBOL_GPL(al5_group_unbind_user);
 
@@ -66,11 +67,10 @@ struct al5_user *al5_group_user_from_uid(struct al5_group *group, int user_uid)
 
 	if (user_uid >= group->max_users_nb) {
 		pr_err("Received user id %d, expected less than %ld\n",
-			    user_uid, (unsigned long)group->max_users_nb);
+		       user_uid, (unsigned long)group->max_users_nb);
 		user = NULL;
-	} else {
+	} else
 		user = group->users[user_uid];
-	}
 
 	return user;
 }
@@ -81,7 +81,8 @@ static bool hasChannelId(struct al5_user *user, int channel_id)
 	return user != NULL && user->chan_uid == channel_id;
 }
 
-struct al5_user* al5_group_user_from_chan_uid(struct al5_group *group, int chan_uid)
+struct al5_user *al5_group_user_from_chan_uid(struct al5_group *group,
+					      int chan_uid)
 {
 	int i;
 
@@ -118,7 +119,8 @@ fail:
 
 void print_cannot_retrieve_user(u32 mail_uid)
 {
-	pr_err("Mail of uid %d received related to inexistant user\n", mail_uid);
+	pr_err("Mail of uid %d received related to inexistant user\n",
+	       mail_uid);
 }
 
 bool should_destroy_channel_on_bad_feedback(u32 mail_uid)
@@ -133,10 +135,11 @@ bool should_destroy_channel_on_bad_feedback(u32 mail_uid)
 	}
 }
 
-struct al5_user * retrieve_user(struct al5_group *group, struct al5_mail *mail)
+struct al5_user *retrieve_user(struct al5_group *group, struct al5_mail *mail)
 {
 	struct al5_user *user;
 	int user_uid, chan_uid = BAD_CHAN;
+
 	switch (al5_mail_get_uid(mail)) {
 
 	case AL_MCU_MSG_CREATE_CHANNEL:
@@ -159,6 +162,7 @@ struct al5_user * retrieve_user(struct al5_group *group, struct al5_mail *mail)
 int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 {
 	struct al5_user *user = retrieve_user(group, mail);
+
 	if (user == NULL) {
 		print_cannot_retrieve_user(al5_mail_get_uid(mail));
 		return -1;
@@ -186,12 +190,15 @@ void handle_mail(struct al5_group *group, struct al5_mail *mail)
 void read_mail(struct al5_group *group)
 {
 	struct al5_mail *mail = al5_mcu_recv(group->mcu);
+
 	handle_mail(group, mail);
 }
 
 #define MAX_MAILBOX_MSG 100
-void al5_group_read_mails(struct al5_group *group) {
+void al5_group_read_mails(struct al5_group *group)
+{
 	unsigned nb_msg = 0;
+
 	while (!al5_mcu_is_empty(group->mcu) && nb_msg++ < MAX_MAILBOX_MSG)
 		read_mail(group);
 }

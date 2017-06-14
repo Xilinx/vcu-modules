@@ -46,7 +46,8 @@ int al5_allocate_dmabuf(struct device *dev, int size, u32 *fd)
 }
 EXPORT_SYMBOL_GPL(al5_allocate_dmabuf);
 
-int al5_get_dmabuf_info(struct device *dev, u32 fd, struct al5_buffer_info *info)
+int al5_get_dmabuf_info(struct device *dev, u32 fd,
+			struct al5_buffer_info *info)
 {
 	struct dma_buf *dbuf;
 	struct dma_buf_attachment *attach;
@@ -54,9 +55,8 @@ int al5_get_dmabuf_info(struct device *dev, u32 fd, struct al5_buffer_info *info
 	int err = 0;
 
 	dbuf = dma_buf_get(fd);
-	if (IS_ERR(dbuf)) {
+	if (IS_ERR(dbuf))
 		return -EINVAL;
-	}
 	attach = dma_buf_attach(dbuf, dev);
 	if (IS_ERR(attach)) {
 		err = -EINVAL;
@@ -88,9 +88,8 @@ int al5_dmabuf_get_address(struct device *dev, u32 fd, u32 *bus_address)
 	int err = 0;
 
 	dbuf = dma_buf_get(fd);
-	if (IS_ERR(dbuf)) {
+	if (IS_ERR(dbuf))
 		return -EINVAL;
-	}
 	attach = dma_buf_attach(dbuf, dev);
 	if (IS_ERR(attach)) {
 		err = -EINVAL;
@@ -117,15 +116,15 @@ struct al5_dma_buffer *al5_alloc_dma(struct device *dev, size_t size)
 {
 	struct al5_dma_buffer *buf =
 		kmalloc(sizeof(struct al5_dma_buffer),
-			     GFP_KERNEL);
-	if (!buf) {
+			GFP_KERNEL);
+
+	if (!buf)
 		return NULL;
-	}
 
 	buf->size = size;
 	buf->cpu_handle = dma_alloc_coherent(dev, buf->size,
-			       	   &buf->dma_handle,
-				   GFP_KERNEL | GFP_DMA);
+					     &buf->dma_handle,
+					     GFP_KERNEL | GFP_DMA);
 
 	if (!buf->cpu_handle) {
 		kfree(buf);
@@ -139,7 +138,8 @@ EXPORT_SYMBOL_GPL(al5_alloc_dma);
 void al5_free_dma(struct device *dev, struct al5_dma_buffer *buf)
 {
 	if (buf)
-		dma_free_coherent(dev, buf->size, buf->cpu_handle, buf->dma_handle);
+		dma_free_coherent(dev, buf->size, buf->cpu_handle,
+				  buf->dma_handle);
 	kfree(buf);
 }
 EXPORT_SYMBOL_GPL(al5_free_dma);
