@@ -71,6 +71,14 @@ static int al5d_codec_minor;
 static int al5d_codec_nr_devs = AL5_NR_DEVS;
 static struct class *module_class;
 
+#define AL5D_AU_UNIT 0
+#define AL5D_VCL_NAL_UNIT 1
+
+static int scheduler_type = AL5D_AU_UNIT;
+module_param(scheduler_type, int, 0);
+MODULE_PARM_DESC(scheduler_type,
+		 "choose the type of scheduler the driver should instanciate: per slice (0) or per frame (1)");
+
 static int ioctl_usage(struct al5_user *user, unsigned int cmd)
 {
 	pr_err("Unknown ioctl: 0x%.8X\n", cmd);
@@ -269,6 +277,11 @@ static int al5d_codec_probe(struct platform_device *pdev)
 			     GFP_KERNEL);
 	if (codec == NULL)
 		return -ENOMEM;
+
+	if (scheduler_type != AL5D_AU_UNIT) {
+		codec->scheduler_type = AL5D_VCL_NAL_UNIT;
+		pr_info("Using per slice scheduler");
+	}
 
 	err = al5_codec_set_up(codec, pdev, max_users_nb);
 	if (err) {

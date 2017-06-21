@@ -62,6 +62,7 @@ struct mcu_init_msg {
 	u32 addr;
 	u32 size;
 	u32 frequency_hack_addr;
+	u32 scheduler_type;
 };
 
 struct msg_info {
