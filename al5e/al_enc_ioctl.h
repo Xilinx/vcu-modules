@@ -82,9 +82,9 @@ struct al5_enc_pic_buf_addrs {
 struct al5_enc_pic_status {
 	__u64 user_param;
 	__u64 src_handle;
-	__u32 skip;
-	__u32 is_ref;
-	__u32 is_eos;
+	__u8 skip;
+	__u8 is_ref;
+	__u8 is_eos;
 	__u32 initial_removal_delay;
 	__u32 dpb_output_delay;
 	__u32 size;
