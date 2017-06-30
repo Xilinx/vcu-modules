@@ -148,6 +148,19 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 		ioctl_info("end AL_MCU_DECODE_ONE_FRM for user %i", user->uid);
 		return ret;
 
+	case AL_MCU_DECODE_ONE_SLICE:
+		ioctl_info("ioctl AL_MCU_DECODE_ONE_SLICE from user %i",
+			   user->uid);
+		if (copy_from_user(&decode_msg, (void *)arg,
+				   sizeof(decode_msg)))
+			return -EFAULT;
+		ret = al5d_user_decode_one_slice(user, &decode_msg);
+		if (copy_to_user((void *)arg, &decode_msg, sizeof(decode_msg)))
+			return -EFAULT;
+		ioctl_info("end AL_MCU_DECODE_ONE_SLICE for user %i",
+			   user->uid);
+		return ret;
+
 	case AL_MCU_SEARCH_START_CODE:
 		ioctl_info("ioctl AL_MCU_SEARCH_START_CODE from user %i",
 			   user->uid);

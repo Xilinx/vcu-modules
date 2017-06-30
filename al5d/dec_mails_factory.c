@@ -43,6 +43,28 @@ void al5d_mail_get_sc_status(struct al5_scstatus *scstatus,
 	memcpy(scstatus, mail->body + 4, sizeof(*scstatus));
 }
 
+void write_decode_mail(struct al5_mail *mail,
+		       u32 chan_uid, struct al5_decode_msg *msg)
+{
+	al5_mail_write_word(mail, chan_uid);
+	al5_mail_write(mail, msg->params.opaque, msg->params.size);
+	al5_mail_write(mail, msg->addresses.opaque, msg->addresses.size);
+	al5_mail_write_word(mail, msg->slice_param_v);
+}
+
+struct al5_mail *
+al5d_create_decode_one_slice_msg(u32 chan_uid, struct al5_decode_msg *msg)
+{
+	int mail_size = 4 + msg->params.size + msg->addresses.size +
+			sizeof(msg->slice_param_v);
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_DECODE_ONE_SLICE,
+						mail_size);
+
+	write_decode_mail(mail, chan_uid, msg);
+
+	return mail;
+}
+
 struct al5_mail *
 al5d_create_decode_one_frame_msg(u32 chan_uid, struct al5_decode_msg *msg)
 {
@@ -51,10 +73,7 @@ al5d_create_decode_one_frame_msg(u32 chan_uid, struct al5_decode_msg *msg)
 	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_DECODE_ONE_FRM,
 						mail_size);
 
-	al5_mail_write_word(mail, chan_uid);
-	al5_mail_write(mail, msg->params.opaque, msg->params.size);
-	al5_mail_write(mail, msg->addresses.opaque, msg->addresses.size);
-	al5_mail_write_word(mail, msg->slice_param_v);
+	write_decode_mail(mail, chan_uid, msg);
 
 	return mail;
 }

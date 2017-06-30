@@ -94,6 +94,30 @@ unlock:
 }
 EXPORT_SYMBOL_GPL(al5d_user_create_channel);
 
+int al5d_user_decode_one_slice(struct al5_user *user,
+			       struct al5_decode_msg *msg)
+{
+	int err;
+
+	err = mutex_lock_killable(&user->locks[AL5_USER_XCODE]);
+	if (err == -EINTR)
+		return err;
+
+	if (!al5_chan_is_created(user)) {
+		pr_err("Cannot decode slice until channel is configured on MCU");
+		err = -EPERM;
+		goto unlock;
+	}
+
+	err = al5_check_and_send(user,
+				 al5d_create_decode_one_slice_msg(user->chan_uid,
+								  msg));
+
+unlock:
+	mutex_unlock(&user->locks[AL5_USER_XCODE]);
+	return err;
+}
+
 int al5d_user_decode_one_frame(struct al5_user *user,
 			       struct al5_decode_msg *msg)
 {
