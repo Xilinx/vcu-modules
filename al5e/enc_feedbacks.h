@@ -31,8 +31,7 @@ struct al5_channel_buffers {
 	__u32 reserved;
 };
 
-struct al5e_feedback_channel
-{
+struct al5e_feedback_channel {
 	u32 chan_uid;
 	u32 user_uid;
 	u32 options;

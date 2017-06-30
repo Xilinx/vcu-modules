@@ -27,12 +27,9 @@
 
 #include <linux/types.h>
 
-struct al5_dma_info
-{
+struct al5_dma_info {
 	__u32 fd;
 	__u32 size;
-	/* this should disappear when the last use of phy addr is removed from
-	 * userspace code */
 	__u32 phy_addr;
 };
 

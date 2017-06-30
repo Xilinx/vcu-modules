@@ -26,8 +26,11 @@
 #include "al_enc_ioctl.h"
 #include "al_codec_mails.h"
 
-void al5e_mail_get_status(struct al5_encode_status *status, struct al5_mail *mail);
-struct al5_mail *al5e_create_encode_one_frame_msg(u32 chan_uid, struct al5_encode_msg *msg);
-struct al5_mail *al5e_create_channel_param_msg(u32 user_uid, struct al5_channel_param *msg);
+void al5e_mail_get_status(struct al5_encode_status *status,
+			  struct al5_mail *mail);
+struct al5_mail *al5e_create_encode_one_frame_msg(u32 chan_uid,
+						  struct al5_encode_msg *msg);
+struct al5_mail *al5e_create_channel_param_msg(u32 user_uid,
+					       struct al5_channel_param *msg);
 
 #endif /* _MCU_ENC_H_ */

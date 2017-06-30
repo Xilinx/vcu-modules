@@ -65,4 +65,4 @@ struct al5_search_sc_msg {
 	struct al5_params buffer_addrs;
 };
 
-#endif	/* _AL_DEC_IOCTL_H_ */
+#endif  /* _AL_DEC_IOCTL_H_ */

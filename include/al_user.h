@@ -62,7 +62,8 @@ enum user_operations {
 /* User structure
  * There is one User for each opening of the device file descriptor.
  * Being a user allow us to call ioctl's to communicate with mcu or ip
- * In order to perform encoding or decoding operations, creating a channel is needed
+ * In order to perform encoding or decoding operations,
+ * creating a channel is needed
  */
 
 struct al5_user {
@@ -79,7 +80,8 @@ struct al5_user {
 	struct al5_buffers_pool rec_buffers;
 };
 
-void al5_user_init(struct al5_user *user, int uid, struct mcu_mailbox_interface *mcu, struct device *device);
+void al5_user_init(struct al5_user *user, int uid,
+		   struct mcu_mailbox_interface *mcu, struct device *device);
 int al5_user_destroy_channel(struct al5_user *user, int quiet);
 
 int al5_check_and_send(struct al5_user *user, struct al5_mail *mail);
@@ -88,8 +90,9 @@ int al5_chan_is_created(struct al5_user *user);
 void al5_user_deliver(struct al5_user *user, struct al5_mail *mail);
 
 int al5_is_ready(struct al5_user *user, struct al5_mail **mail, int my_uid);
-int al5_status_is_ready(struct al5_user *user, struct al5_mail **mail, int my_uid);
+int al5_status_is_ready(struct al5_user *user, struct al5_mail **mail,
+			int my_uid);
 
-struct al5_mail * al5_user_get_mail(struct al5_user *user, u32 mail_uid);
+struct al5_mail *al5_user_get_mail(struct al5_user *user, u32 mail_uid);
 
 #endif /* _AL_USER_H_ */

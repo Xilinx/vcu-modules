@@ -23,8 +23,7 @@
 
 #include "al_mail.h"
 
-enum al5_mail_uid
-{
+enum al5_mail_uid {
 	AL_MCU_MSG_INIT,
 	AL_MCU_MSG_DEINIT,
 	AL_MCU_MSG_IP_INT,
@@ -66,18 +65,19 @@ struct mcu_init_msg {
 };
 
 struct msg_info {
-       u32 chan_uid;
-       void *priv;
+	u32 chan_uid;
+	void *priv;
 };
 
-struct al5_mail *create_init_msg(u32 chan_uid, struct mcu_init_msg * msg);
+struct al5_mail *create_init_msg(u32 chan_uid, struct mcu_init_msg *msg);
 struct al5_mail *create_destroy_channel_msg(u32 chan_uid);
 struct al5_mail *create_quiet_destroy_channel_msg(u32 chan_uid);
 
-struct al5_mail *al5_create_classic_mail(u32 sender_uid, u32 msg_uid, void *msg, u32 msg_size);
+struct al5_mail *al5_create_classic_mail(u32 sender_uid, u32 msg_uid, void *msg,
+					 u32 msg_size);
 struct al5_mail *al5_create_empty_mail(u32 sender_uid, u32 msg_uid);
 
-u32 al5_mail_get_chan_uid(struct al5_mail * mail);
+u32 al5_mail_get_chan_uid(struct al5_mail *mail);
 
 void al5_print_mcu_trace(struct al5_mail *mail);
 

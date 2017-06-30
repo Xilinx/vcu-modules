@@ -84,7 +84,6 @@ struct al5_enc_pic_status {
 	__u64 src_handle;
 	__u8 skip;
 	__u8 is_ref;
-	__u8 is_eos;
 	__u32 initial_removal_delay;
 	__u32 dpb_output_delay;
 	__u32 size;
@@ -110,7 +109,7 @@ struct al5_enc_pic_status {
 
 	__u32 type;
 	__u32 pic_struct;
-	__u32 is_idr;
+	__u8 is_idr;
 	__s16 pps_qp;
 };
 
@@ -125,6 +124,8 @@ struct al5_enc_request_info {
 };
 
 struct al5_encode_msg {
+	__u32 represents_end_of_stream;
+	__u32 padding;
 	struct al5_enc_info enc_info;
 	struct al5_enc_request_info req_info;
 	struct al5_enc_pic_buf_addrs buffers_addrs;
@@ -137,4 +138,4 @@ struct al5_buffer {
 	__u32 size;
 };
 
-#endif	/* _AL_ENC_IOCTL_H_ */
+#endif  /* _AL_ENC_IOCTL_H_ */

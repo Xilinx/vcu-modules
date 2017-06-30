@@ -107,7 +107,7 @@ struct al5_mail *create_set_irq_timer_buffer_msg(struct msg_info *info)
 	struct al5_mail *mail;
 
 	mail = al5_mail_create(AL_MCU_MSG_SET_IRQ_TIMER_BUFFER,
-				4 + sizeof(u32));
+			       4 + sizeof(u32));
 	al5_mail_write_word(mail, chan_uid);
 	al5_mail_write_word(mail, phy_addr);
 

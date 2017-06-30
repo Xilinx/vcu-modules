@@ -39,11 +39,12 @@ struct mcu_mailbox_config {
 };
 
 int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
-		struct device *device,
-		struct mcu_mailbox_config *config,
-		void *mcu_interrupt_register);
+			     struct device *device,
+			     struct mcu_mailbox_config *config,
+			     void *mcu_interrupt_register);
 
-void al5_mcu_interface_destroy(struct mcu_mailbox_interface *mcu, struct device *device);
+void al5_mcu_interface_destroy(struct mcu_mailbox_interface *mcu,
+			       struct device *device);
 
 int al5_mcu_is_empty(struct mcu_mailbox_interface *mcu);
 

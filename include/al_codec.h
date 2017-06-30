@@ -38,22 +38,16 @@
 #include "al_vcu.h"
 #include "al_traces.h"
 
-#define al5_writel(val,reg) iowrite32(val, codec->regs + reg)
+#define al5_writel(val, reg) iowrite32(val, codec->regs + reg)
 #define al5_readl(reg) ioread32(codec->regs + reg)
 #define al5_dbg(format, ...)                             \
-        do {                                                         \
-                dev_dbg(codec->device, format, ##__VA_ARGS__); \
-        } while (0)
+	dev_dbg(codec->device, format, ## __VA_ARGS__)
 
 #define al5_info(format, ...)                             \
-        do {                                                         \
-                dev_info(codec->device, format, ##__VA_ARGS__); \
-        } while (0)
+	dev_info(codec->device, format, ## __VA_ARGS__)
 
 #define al5_err(format, ...)                             \
-        do {                                                         \
-                dev_err(codec->device, format, ##__VA_ARGS__); \
-        } while (0)
+	dev_err(codec->device, format, ## __VA_ARGS__)
 
 /* MCU Mailbox */
 #define MAILBOX_CMD                     0x7800
@@ -61,8 +55,8 @@
 #define MAILBOX_SIZE                    (0x400 - 0x8)
 
 /* MCU Bootloader */
-#define AL5_MCU_INTERRUPT_HANDLER	0x0010
-#define MCU_SLEEP_INSTRUCTION		0xba020004 // Instruction "mbar 16"
+#define AL5_MCU_INTERRUPT_HANDLER       0x0010
+#define MCU_SLEEP_INSTRUCTION           0xba020004 /* Instruction "mbar 16" */
 
 /* MCU Control Regs */
 #define AL5_MCU_RESET                   0x9000
@@ -82,10 +76,10 @@
 #define AXI_ADDR_OFFSET_IP              0x9208
 
 /* MCU Cache */
-#define MCU_SUBALLOCATOR_SIZE		0x1000000
+#define MCU_SUBALLOCATOR_SIZE           0x1000000
 #define MCU_CACHE_OFFSET                0x80000000
-#define AL5_ICACHE_SIZE                 0x1000000 /* 16 MB */
-#define MCU_SRAM_SIZE                   0x8000   /* 32 kB */
+#define AL5_ICACHE_SIZE                 0x1000000       /* 16 MB */
+#define MCU_SRAM_SIZE                   0x8000          /* 32 kB */
 
 struct al5_codec_desc {
 	struct device *device;
@@ -114,11 +108,12 @@ int al5_codec_set_up(struct al5_codec_desc *codec,
 
 void al5_codec_tear_down(struct al5_codec_desc *codec);
 
-int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file, char *bl_fw_file);
+int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
+			   char *bl_fw_file);
 
 int al5_codec_open(struct inode *inode, struct file *filp);
 int al5_codec_release(struct inode *inode, struct file *filp);
 
 long al5_codec_compat_ioctl(struct file *file, unsigned int cmd,
-				       unsigned long arg);
+			    unsigned long arg);
 #endif /* _AL_CODEC_H_ */

@@ -35,9 +35,11 @@ struct al5_mail *create_set_irq_timer_buffer_msg(struct msg_info *info);
 struct al5_mail *create_random_msg(u8 drv_chan_uid, u8 treasure);
 
 void al5_handle_mcu_random_test(struct al5_group *group,
-				  struct al5_mail *mail);
-int al5_set_timer_buffer(struct al5_codec_desc *codec, struct al5_user *user, unsigned long arg);
-int al5_set_irq_timer_buffer(struct al5_codec_desc *codec, struct al5_user *user, unsigned long arg);
+				struct al5_mail *mail);
+int al5_set_timer_buffer(struct al5_codec_desc *codec, struct al5_user *user,
+			 unsigned long arg);
+int al5_set_irq_timer_buffer(struct al5_codec_desc *codec,
+			     struct al5_user *user, unsigned long arg);
 
 int al5_mail_tests(struct al5_user *user, unsigned long arg);
 
