@@ -37,9 +37,6 @@
 #define AL_MCU_RELEASE_REC_PICTURE _IOWR('q', 24, __u32)
 
 
-#define AL_MAX_ROWS_TILE       22
-#define AL_NUM_CORE            4
-
 struct al5_reconstructed_info {
 	__u32 fd;
 	__u32 pic_struct;
@@ -63,33 +60,9 @@ struct al5_config_channel {
 	struct al5_channel_status status;
 };
 
-struct al5_enc_info {
-	__u32 enc_options;
-	__s16 pps_qp;
-	__u64 user_param;
-	__u64 src_handle;
-};
-
-struct al5_enc_pic_buf_addrs {
-	__u32 src_y;
-	__u32 src_uv;
-	__u32 pitch_src;
-
-	__u32 ep2;
-	__u32 ep2v;
-};
-
-struct al5_enc_request_info {
-	__u32 req_options;
-	__u32 scene_change_delay;
-};
-
 struct al5_encode_msg {
-	__u32 represents_end_of_stream;
-	__u32 padding;
-	struct al5_enc_info enc_info;
-	struct al5_enc_request_info req_info;
-	struct al5_enc_pic_buf_addrs buffers_addrs;
+	struct al5_params params;
+	struct al5_params addresses;
 };
 
 struct al5_buffer {

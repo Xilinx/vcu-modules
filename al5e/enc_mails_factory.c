@@ -34,8 +34,18 @@ void al5e_mail_get_status(struct al5_params *status,
 struct al5_mail *al5e_create_encode_one_frame_msg(u32 chan_uid,
 						  struct al5_encode_msg *msg)
 {
-	return al5_create_classic_mail(chan_uid, AL_MCU_MSG_ENCODE_ONE_FRM, msg,
-				       sizeof(*msg));
+	int mail_size = 8 + msg->params.size + msg->addresses.size;
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_ENCODE_ONE_FRM,
+						mail_size);
+
+	const int padding = 0;
+
+	al5_mail_write_word(mail, chan_uid);
+	al5_mail_write_word(mail, padding);
+	al5_mail_write(mail, msg->params.opaque_params, msg->params.size);
+	al5_mail_write(mail, msg->addresses.opaque_params, msg->addresses.size);
+
+	return mail;
 }
 
 struct al5_mail *al5e_create_channel_param_msg(u32 user_uid,

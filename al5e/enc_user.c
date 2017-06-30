@@ -187,9 +187,6 @@ int al5e_user_encode_one_frame(struct al5_user *user,
 		goto unlock;
 	}
 
-	msg->buffers_addrs.ep2v = al5_mcu_get_virtual_address(
-		msg->buffers_addrs.ep2);
-
 	err = al5_check_and_send(user,
 				 al5e_create_encode_one_frame_msg(user->chan_uid,
 								  msg));
