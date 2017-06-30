@@ -27,7 +27,7 @@
 #define AL_MCU_CONFIG_CHANNEL  _IOWR('q', 2, struct al5_config_channel)
 #define AL_MCU_DESTROY_CHANNEL  _IO('q', 4)
 #define AL_MCU_ENCODE_ONE_FRM _IOWR('q', 5, struct al5_encode_msg)
-#define AL_MCU_WAIT_FOR_STATUS _IOWR('q', 6, struct al5_encode_status)
+#define AL_MCU_WAIT_FOR_STATUS _IOWR('q', 6, struct al5_params)
 
 #define MAIL_TESTS _IO('q', 7)
 #define AL_MCU_SET_TIMER_BUFFER _IOWR('q', 16, struct al5_dma_info)
@@ -46,7 +46,7 @@ struct al5_reconstructed_info {
 	__u32 poc;
 };
 
-struct al5_channel_param {
+struct al5_params {
 	__u32 size;
 	__u32 opaque_params[128];
 };
@@ -59,7 +59,7 @@ struct al5_channel_status {
 };
 
 struct al5_config_channel {
-	struct al5_channel_param param;
+	struct al5_params param;
 	struct al5_channel_status status;
 };
 
@@ -77,45 +77,6 @@ struct al5_enc_pic_buf_addrs {
 
 	__u32 ep2;
 	__u32 ep2v;
-};
-
-struct al5_enc_pic_status {
-	__u64 user_param;
-	__u64 src_handle;
-	__u8 skip;
-	__u8 is_ref;
-	__u32 initial_removal_delay;
-	__u32 dpb_output_delay;
-	__u32 size;
-	__u32 frm_tag_size;
-	__s32 stuffing;
-	__s32 filler;
-	__u16 num_clmn;
-	__u16 num_row;
-	__s16 qp;
-	__u8 num_ref_idx_l0;
-	__u8 num_ref_idx_l1;
-
-	__u32 strm_part_offset;
-	__s32 num_parts;
-	__u32 sum_cplx;
-
-	__s32 tile_width[AL_NUM_CORE];
-	__s32 tile_height[AL_MAX_ROWS_TILE];
-
-	__u32 error_code;
-
-	__u32 num_group;
-
-	__u32 type;
-	__u32 pic_struct;
-	__u8 is_idr;
-	__s16 pps_qp;
-};
-
-struct al5_encode_status {
-	__u64 stream_buffer_ptr;
-	struct al5_enc_pic_status pic_status;
 };
 
 struct al5_enc_request_info {

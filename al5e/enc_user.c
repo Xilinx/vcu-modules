@@ -112,7 +112,7 @@ static int send_reference_buffers(struct al5_user *user)
 }
 
 int al5e_user_create_channel(struct al5_user *user,
-			     struct al5_channel_param *param,
+			     struct al5_params *param,
 			     struct al5_channel_status *status)
 {
 	struct al5_mail *feedback;
@@ -201,7 +201,7 @@ unlock:
 EXPORT_SYMBOL_GPL(al5e_user_encode_one_frame);
 
 int al5e_user_wait_for_status(struct al5_user *user,
-			      struct al5_encode_status *msg)
+			      struct al5_params *msg)
 {
 	struct al5_mail *feedback;
 	int err = 0;

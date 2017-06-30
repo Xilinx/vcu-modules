@@ -99,7 +99,7 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 
 	switch (cmd) {
 		struct al5_config_channel config_channel;
-		struct al5_encode_status encode_status;
+		struct al5_params encode_status;
 		struct al5_encode_msg encode_msg;
 		struct al5_reconstructed_info rec_msg;
 		struct al5_buffer buffer_msg;
