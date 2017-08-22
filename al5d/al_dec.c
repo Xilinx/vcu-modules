@@ -54,8 +54,8 @@
 #include "al_vcu.h"
 #include "al_alloc.h"
 #include "al_user.h"
+#include "al_codec.h"
 #include "dec_user.h"
-#include "al_test.h"
 #include "al_char.h"
 
 #include "mcu_interface.h"
@@ -212,10 +212,6 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 	case GET_DMA_PHY:
 		ret = al5_ioctl_get_dmabuf_dma_addr(codec->device, arg);
 		return ret;
-
-	/* NSFProd */
-	case MAIL_TESTS:
-		return al5_mail_tests(user, arg);
 
 	default:
 		return ioctl_usage(user, cmd);

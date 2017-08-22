@@ -29,7 +29,6 @@
 #define AL_MCU_ENCODE_ONE_FRM _IOWR('q', 5, struct al5_encode_msg)
 #define AL_MCU_WAIT_FOR_STATUS _IOWR('q', 6, struct al5_params)
 
-#define MAIL_TESTS _IO('q', 7)
 #define AL_MCU_PUT_STREAM_BUFFER _IOWR('q', 22, struct al5_buffer)
 
 #define AL_MCU_GET_REC_PICTURE _IOWR('q', 23, struct al5_reconstructed_info)

@@ -9,7 +9,6 @@ allegro-objs := \
 	al_char.o \
 	al_codec.o \
 	al_dmabuf.o \
-	al_test.o \
 	al_user.o \
 	al_vcu.o \
 	al_mail.o \
