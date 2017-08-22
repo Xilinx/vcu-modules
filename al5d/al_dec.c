@@ -214,28 +214,6 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 		return ret;
 
 	/* NSFProd */
-	case AL_MCU_SET_TIMER_BUFFER:
-		ioctl_info("ioctl AL_MCU_SET_TIMER_BUFFER from user %i",
-			   user->uid);
-		if (!al5_chan_is_created(user))
-			return -EPERM;
-		ret = al5_set_timer_buffer(codec, user, arg);
-		ioctl_info("end AL_MCU_SET_TIMER_BUFFER for user %i",
-			   user->uid);
-		return ret;
-
-	/* NSFProd */
-	case AL_MCU_SET_IRQ_TIMER_BUFFER:
-		ioctl_info("ioctl AL_MCU_SET_IRQ_TIMER_BUFFER from user %i",
-			   user->uid);
-		if (!al5_chan_is_created(user))
-			return -EPERM;
-		ret = al5_set_irq_timer_buffer(codec, user, arg);
-		ioctl_info("end AL_MCU_SET_IRQ_TIMER_BUFFER for user %i",
-			   user->uid);
-		return ret;
-
-	/* NSFProd */
 	case MAIL_TESTS:
 		return al5_mail_tests(user, arg);
 
