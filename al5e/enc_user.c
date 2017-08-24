@@ -257,7 +257,7 @@ static int get_user_rec_buffer(struct al5_user *user, int id)
 {
 	if (id > user->rec_buffers.count || id < 0)
 		return -1;
-	return user->rec_buffers.fds[id];
+	return al5_bufpool_reserve_fd(&user->rec_buffers, id);
 }
 
 int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)

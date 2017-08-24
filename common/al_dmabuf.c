@@ -289,8 +289,8 @@ static struct dma_buf *al5_get_dmabuf(void *dma_info_priv)
 	return dbuf;
 }
 
-static void *al5_dmabuf_wrap(struct device *dev, unsigned long size,
-			     struct al5_dma_buffer *buffer)
+void *al5_dmabuf_wrap(struct device *dev, unsigned long size,
+		      struct al5_dma_buffer *buffer)
 {
 	struct al5_dmabuf_priv *dinfo;
 	struct dma_buf *dbuf;
@@ -310,6 +310,7 @@ static void *al5_dmabuf_wrap(struct device *dev, unsigned long size,
 
 	return dbuf;
 }
+EXPORT_SYMBOL_GPL(al5_dmabuf_wrap);
 
 int al5_create_dmabuf_fd(struct device *dev, unsigned long size,
 			 struct al5_dma_buffer *buffer)

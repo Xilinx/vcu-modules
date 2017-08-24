@@ -40,17 +40,12 @@ int al5_bufpool_allocate(struct al5_buffers_pool *bufpool,
 	if (!bufpool->handles)
 		goto fail_handles;
 
-	bufpool->fds = kcalloc(count, sizeof(int), GFP_KERNEL);
-	if (!bufpool->fds)
-		goto fail_fds;
-
 	for (i = 0; i < count; i++) {
 		bufpool->buffers[i] = al5_alloc_dma(device, size);
 		if (bufpool->buffers[i] == NULL)
 			goto fail_dma_allocation;
-		bufpool->fds[i] = al5_create_dmabuf_fd(device, size,
-						       bufpool->buffers[i]);
-		bufpool->handles[i] = (void *)dma_buf_get(bufpool->fds[i]);
+		bufpool->handles[i] = al5_dmabuf_wrap(device, size,
+						      bufpool->buffers[i]);
 		++bufpool->count;
 	}
 
@@ -60,8 +55,6 @@ fail_dma_allocation:
 	al5_bufpool_free(bufpool, device);
 	return -ENOMEM;
 
-fail_fds:
-	kfree(bufpool->handles);
 fail_handles:
 	kfree(bufpool->buffers);
 fail_buffers:
@@ -73,11 +66,11 @@ void al5_bufpool_free(struct al5_buffers_pool *bufpool, struct device *device)
 {
 	int i;
 
-	for (i = 0; i < bufpool->count; i++)
-		dma_buf_put((struct dma_buf *)bufpool->handles[i]);
+	for (i = 0; i < bufpool->count; ++i)
+		dma_buf_put(bufpool->handles[i]);
+
 	kfree(bufpool->buffers);
 	kfree(bufpool->handles);
-	kfree(bufpool->fds);
 	memset(bufpool, 0, sizeof(*bufpool));
 }
 EXPORT_SYMBOL_GPL(al5_bufpool_free);
@@ -85,19 +78,29 @@ EXPORT_SYMBOL_GPL(al5_bufpool_free);
 int al5_bufpool_get_id(struct al5_buffers_pool *bufpool, int fd)
 {
 	u32 i = 0;
-	void *handle = (void *)dma_buf_get(fd);
+	struct dma_buf *handle = dma_buf_get(fd);
 
 	if (IS_ERR(handle))
 		return -1;
 
 	for (i = 0; i < bufpool->count; ++i) {
 		if (handle == bufpool->handles[i]) {
-			dma_buf_put((struct dma_buf *)handle);
+			dma_buf_put(handle);
 			return i;
 		}
 	}
-	dma_buf_put((struct dma_buf *)handle);
+	dma_buf_put(handle);
 	return -1;
 }
 EXPORT_SYMBOL_GPL(al5_bufpool_get_id);
+
+int al5_bufpool_reserve_fd(struct al5_buffers_pool *bufpool, int id)
+{
+	struct dma_buf *dbuf = bufpool->handles[id];
+	int fd = dma_buf_fd(dbuf, O_RDWR);
+
+	dma_buf_get(fd);
+	return fd;
+}
+EXPORT_SYMBOL_GPL(al5_bufpool_reserve_fd);
 

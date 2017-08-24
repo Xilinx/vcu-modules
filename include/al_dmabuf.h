@@ -26,6 +26,8 @@ struct al5_buffer_info {
 	u32 size;
 };
 
+void *al5_dmabuf_wrap(struct device *dev, unsigned long size,
+		      struct al5_dma_buffer *buffer);
 int al5_create_dmabuf_fd(struct device *dev, unsigned long size,
 			 struct al5_dma_buffer *buffer);
 

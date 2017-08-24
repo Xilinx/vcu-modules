@@ -33,5 +33,6 @@ int al5_bufpool_allocate(struct al5_buffers_pool *bufpool,
 			 struct device *device, int count, int size);
 void al5_bufpool_free(struct al5_buffers_pool *bufpool, struct device *device);
 int al5_bufpool_get_id(struct al5_buffers_pool *bufpool, int fd);
+int al5_bufpool_reserve_fd(struct al5_buffers_pool *bufpool, int id);
 
 #endif
