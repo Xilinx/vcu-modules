@@ -21,7 +21,7 @@
 
 #include <linux/slab.h>
 
-#include "al_alloc.h"
+#include "al_dmabuf.h"
 #include <linux/dma-buf.h>
 #include "al_buffers_pool.h"
 

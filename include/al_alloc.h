@@ -24,17 +24,12 @@
 
 #include <linux/device.h>
 #include "al_ioctl.h"
-#include "al_dmabuf.h"
 
-struct al5_buffer_info {
-	u32 bus_address;
+struct al5_dma_buffer {
 	u32 size;
+	dma_addr_t dma_handle;
+	void *cpu_handle;
 };
-
-int al5_allocate_dmabuf(struct device *dev, int size, u32 *fd);
-int al5_dmabuf_get_address(struct device *dev, u32 fd, u32 *bus_address);
-int al5_get_dmabuf_info(struct device *dev, u32 fd,
-			struct al5_buffer_info *info);
 
 struct al5_dma_buffer *al5_alloc_dma(struct device *dev, size_t size);
 void al5_free_dma(struct device *dev, struct al5_dma_buffer *buf);

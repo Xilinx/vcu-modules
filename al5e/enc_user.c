@@ -27,7 +27,7 @@
 #include "enc_user.h"
 #include "enc_mails_factory.h"
 #include "enc_feedbacks.h"
-#include "al_alloc.h"
+#include "al_dmabuf.h"
 #include "al_buffers_pool.h"
 
 static void update_chan_param(struct al5_channel_status *status,

@@ -19,7 +19,7 @@
 
 
 #include "al_alloc_ioctl.h"
-#include "al_alloc.h"
+#include "al_dmabuf.h"
 
 #include <linux/uaccess.h>
 
