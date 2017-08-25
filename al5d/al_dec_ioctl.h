@@ -34,6 +34,7 @@
 
 struct al5_channel_status {
 	__u8 num_core;
+	__u32 error_code;
 };
 
 struct al5_params {
