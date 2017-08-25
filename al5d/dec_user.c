@@ -56,7 +56,7 @@ int al5d_user_create_channel(struct al5_user *user,
 			     struct al5_channel_config *msg)
 {
 	struct al5_mail *feedback;
-	int err;
+	int err = -EINVAL;
 
 	err = mutex_lock_killable(&user->locks[AL5_USER_CREATE]);
 	if (err == -EINTR)
