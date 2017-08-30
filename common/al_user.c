@@ -148,8 +148,10 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 			goto unlock_mutexes;
 
 		mail = al5_queue_pop(&user->queues[AL5_USER_MAIL_DESTROY]);
-		if (mail == NULL)
+		if (mail == NULL) {
+			err = -EINTR;
 			goto unlock_mutexes;
+		}
 
 		al5_free_mail(mail);
 	}
