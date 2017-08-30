@@ -35,19 +35,38 @@ static bool mail_is_available(struct al5_queue *q)
 	return !al5_list_empty(q->list) || !q->locked;
 }
 
-struct al5_mail *al5_queue_pop_timeout(struct al5_queue *q)
+int al5_queue_pop_timeout(struct al5_mail **mail, struct al5_queue *q)
 {
-	struct al5_mail *mail;
 	unsigned long flags = 0;
 
-	wait_event_interruptible_timeout(q->queue,
-					 mail_is_available(q),
-					 WAIT_TIMEOUT_DURATION);
+	int err = wait_event_interruptible_timeout(q->queue,
+						   mail_is_available(q),
+						   WAIT_TIMEOUT_DURATION);
+
+	/*
+	 * queue has a strict timeout.
+	 * if we get a timeout, it means
+	 * the mcu didn't answer and is in
+	 * a bad state. we do not want to try again
+	 */
+	if (err == 0)
+		err = -EINVAL;
+	else if (err > 0)
+		err = 0;
+	/* errors of queue are transmitted to the userspace so use EINTR */
+	else if (err == -ERESTARTSYS)
+		err = -EINTR;
+
 	spin_lock_irqsave(&q->lock, flags);
-	mail = al5_list_pop(&q->list);
+	*mail = al5_list_pop(&q->list);
 	spin_unlock_irqrestore(&q->lock, flags);
 
-	return mail;
+	if (*mail)
+		err = 0;
+	else
+		err = (err != 0) ? err : -EINVAL;
+
+	return err;
 }
 EXPORT_SYMBOL_GPL(al5_queue_pop_timeout);
 

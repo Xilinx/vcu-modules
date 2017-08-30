@@ -231,22 +231,22 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	if (err == -EINTR)
 		goto fail_lock;
 
-	feedback = al5_queue_pop_timeout(&root->queues[AL5_USER_MAIL_INIT]);
-	if (feedback == NULL) {
-		err = -EINTR;
+	err =
+		al5_queue_pop_timeout(&feedback,
+				      &root->queues[AL5_USER_MAIL_INIT]);
+	if (err)
 		goto unlock;
-	}
 	al5_free_mail(feedback);
 
 	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
 	if (err)
 		goto unlock;
 
-	feedback = al5_queue_pop_timeout(&root->queues[AL5_USER_MAIL_INIT]);
-	if (feedback == NULL) {
-		err = -EINTR;
+	err =
+		al5_queue_pop_timeout(&feedback,
+				      &root->queues[AL5_USER_MAIL_INIT]);
+	if (err)
 		goto unlock;
-	}
 	al5_free_mail(feedback);
 
 	mutex_unlock(&root->locks[AL5_USER_INIT]);

@@ -73,11 +73,13 @@ int al5d_user_create_channel(struct al5_user *user,
 	if (err)
 		goto unlock;
 
-	feedback = al5_queue_pop_timeout(&user->queues[AL5_USER_MAIL_CREATE]);
-	if (feedback)
-		update_chan_param(&msg->status, feedback);
-	else
+	err =
+		al5_queue_pop_timeout(&feedback,
+				      &user->queues[AL5_USER_MAIL_CREATE]);
+	if (err)
 		goto unlock;
+
+	update_chan_param(&msg->status, feedback);
 
 	err = init_chan(user, feedback);
 	al5_free_mail(feedback);

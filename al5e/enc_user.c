@@ -132,8 +132,10 @@ int al5e_user_create_channel(struct al5_user *user,
 	if (err)
 		goto fail;
 
-	feedback = al5_queue_pop_timeout(&user->queues[AL5_USER_MAIL_CREATE]);
-	if (feedback == NULL)
+	err =
+		al5_queue_pop_timeout(&feedback,
+				      &user->queues[AL5_USER_MAIL_CREATE]);
+	if (err)
 		goto fail;
 
 	fb_message =
