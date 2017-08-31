@@ -357,7 +357,7 @@ static int __init al5d_codec_init(void)
 
 static void __exit al5d_codec_exit(void)
 {
-	dev_t devno = MKDEV(al5d_codec_major, al5d_codec_minor);
+	dev_t devno = MKDEV(al5d_codec_major, 0);
 
 	platform_driver_unregister(&al5d_platform_driver);
 	destroy_module_class();
