@@ -95,6 +95,7 @@ struct al5_codec_desc {
 
 	struct al5_group users_group;
 	int scheduler_type;
+	int minor;
 };
 
 struct al5_filp_data {

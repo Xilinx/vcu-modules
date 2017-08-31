@@ -67,7 +67,6 @@
 
 int max_users_nb = MAX_USERS_NB;
 static int al5e_codec_major;
-static int al5e_codec_minor;
 static int al5e_codec_nr_devs = AL5_NR_DEVS;
 static struct class *module_class;
 
@@ -194,14 +193,14 @@ static const struct file_operations al5e_fops = {
 	.compat_ioctl	= al5_codec_compat_ioctl,
 };
 
-static int al5e_setup_codec_cdev(struct al5_codec_desc *codec, int index)
+static int al5e_setup_codec_cdev(struct al5_codec_desc *codec, int minor)
 {
 	struct device *device;
-	dev_t dev = MKDEV(al5e_codec_major, al5e_codec_minor);
+	dev_t dev = MKDEV(al5e_codec_major, minor);
 
 	int err = al5_setup_codec_cdev(codec, &al5e_fops, THIS_MODULE,
 				       al5e_codec_major,
-				       al5e_codec_minor + index);
+				       minor);
 
 	if (err)
 		return err;
@@ -219,7 +218,7 @@ static int al5e_setup_codec_cdev(struct al5_codec_desc *codec, int index)
 static int al5e_probe(struct platform_device *pdev)
 {
 	int err;
-	static int index;
+	static int current_minor;
 
 	struct al5_codec_desc *codec;
 
@@ -241,13 +240,14 @@ static int al5e_probe(struct platform_device *pdev)
 		al5_codec_tear_down(codec);
 		return err;
 	}
-	err = al5e_setup_codec_cdev(codec, index);
+	err = al5e_setup_codec_cdev(codec, current_minor);
 	if (err) {
 		pr_err("Failed to setup cdev");
 		al5_codec_tear_down(codec);
 		return err;
 	}
-	++index;
+	codec->minor = current_minor;
+	++current_minor;
 
 	return 0;
 }
@@ -255,7 +255,7 @@ static int al5e_probe(struct platform_device *pdev)
 static int al5e_remove(struct platform_device *pdev)
 {
 	struct al5_codec_desc *codec = platform_get_drvdata(pdev);
-	dev_t dev = MKDEV(al5e_codec_major, al5e_codec_minor);
+	dev_t dev = MKDEV(al5e_codec_major, codec->minor);
 
 	al5_codec_tear_down(codec);
 	device_destroy(module_class, dev);
@@ -282,7 +282,7 @@ static struct platform_driver al5e_platform_driver = {
 
 static int setup_chrdev_region(void)
 {
-	return al5_setup_chrdev_region(&al5e_codec_major, al5e_codec_minor,
+	return al5_setup_chrdev_region(&al5e_codec_major, 0,
 				       al5e_codec_nr_devs, "al5e");
 }
 
