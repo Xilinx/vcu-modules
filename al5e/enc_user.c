@@ -228,20 +228,27 @@ unlock:
 int al5e_user_put_stream_buffer(struct al5_user *user,
 				struct al5_buffer *buffer)
 {
-	int error;
 	struct al5_buffer_info buffer_info;
 	struct al5_mail *mail;
 	u32 mcu_vaddr;
+	int err = -EINVAL;
 
-	if (!al5_chan_is_created(user))
-		return -EPERM;
+	if (!mutex_trylock(&user->locks[AL5_USER_STREAM]))
+		return -EINTR;
 
-	error = al5_get_dmabuf_info(user->device, buffer->handle, &buffer_info);
-	if (error)
-		return error;
+	if (!al5_chan_is_created(user)) {
+		err = -EPERM;
+		goto unlock;
+	}
 
-	if (buffer->size > buffer_info.size)
-		return -EFAULT;
+	err = al5_get_dmabuf_info(user->device, buffer->handle, &buffer_info);
+	if (err)
+		goto unlock;
+
+	if (buffer->size > buffer_info.size) {
+		err = -EFAULT;
+		goto unlock;
+	}
 
 	mail = al5_mail_create(AL_MCU_MSG_PUT_STREAM_BUFFER, 28);
 	al5_mail_write_word(mail, user->chan_uid);
@@ -252,7 +259,54 @@ int al5e_user_put_stream_buffer(struct al5_user *user,
 	al5_mail_write_word(mail, buffer->offset);
 	al5_mail_write(mail, &buffer->stream_buffer_ptr, 8);
 
-	return al5_check_and_send(user, mail);
+	err = al5_check_and_send(user, mail);
+
+unlock:
+	mutex_unlock(&user->locks[AL5_USER_STREAM]);
+	return err;
+}
+
+int al5e_user_get_stream_buffer(struct al5_user *user, __u64 *stream_buf_ptr)
+{
+	struct al5_mail *mail;
+	struct al5_mail *feedback;
+	int err = -EINVAL;
+
+	*stream_buf_ptr = 0;
+
+	if (!mutex_trylock(&user->locks[AL5_USER_STREAM]))
+		return -EINTR;
+
+	if (!al5_chan_is_created(user)) {
+		err = -EPERM;
+		goto unlock;
+	}
+
+	mail = al5_create_classic_mail(user->chan_uid,
+				       AL_MCU_MSG_GET_STREAM_BUFFER, 0, 0);
+	err = al5_check_and_send(user, mail);
+	if (err)
+		goto unlock;
+
+	feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_STREAM]);
+	if (!feedback) {
+		err = -EINTR;
+		goto unlock;
+	}
+
+	if (al5_mail_get_size(feedback) - 4 != 0)
+		memcpy(stream_buf_ptr, al5_mail_get_body(feedback) + 4, 8);
+	else {
+		err = -EINVAL;
+		goto free_mail;
+	}
+
+	err = 0;
+free_mail:
+	al5_free_mail(feedback);
+unlock:
+	mutex_unlock(&user->locks[AL5_USER_STREAM]);
+	return err;
 }
 
 static int get_user_rec_buffer(struct al5_user *user, int id)

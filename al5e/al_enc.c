@@ -103,6 +103,7 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 		struct al5_reconstructed_info rec_msg;
 		struct al5_buffer buffer_msg;
 		u32 rec_fd;
+		__u64 stream_buffer_ptr = 0;
 	case AL_MCU_CONFIG_CHANNEL:
 		ioctl_info("ioctl AL_MCU_CONFIG_CHANNEL from user %i",
 			   user->uid);
@@ -171,6 +172,13 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 				   sizeof(buffer_msg)))
 			return -EFAULT;
 		return al5e_user_put_stream_buffer(user, &buffer_msg);
+
+	case AL_MCU_GET_STREAM_BUFFER:
+		ret = al5e_user_get_stream_buffer(user, &stream_buffer_ptr);
+		if (copy_to_user((void *)arg, &stream_buffer_ptr,
+				 sizeof(__u64)))
+			return -EFAULT;
+		return ret;
 
 	case GET_DMA_FD:
 		ret = al5_ioctl_get_dma_fd(codec->device, arg);
