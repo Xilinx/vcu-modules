@@ -51,10 +51,9 @@ static int send_msg(struct mcu_mailbox_interface *mcu, struct al5_mail *mail)
 {
 	int err = al5_mcu_send(mcu, mail);
 
-	if (err) {
-		pr_err("message sent is too big\n");
+	if (err)
 		return err;
-	}
+
 	al5_signal_mcu(mcu);
 
 	return 0;
