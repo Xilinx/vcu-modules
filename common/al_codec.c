@@ -59,16 +59,16 @@ static int copy_firmware(struct al5_codec_desc *codec,
 			 const struct firmware *fw,
 			 const struct firmware *bl_fw)
 {
-	setup_info("firmware size is %zx\n", fw->size);
-	setup_info("bootloader firmware size is %zx\n", bl_fw->size);
+	setup_info("firmware size is %zx", fw->size);
+	setup_info("bootloader firmware size is %zx", bl_fw->size);
 
 	if (fw->size > AL5_ICACHE_SIZE) {
-		al5_err("firmware is too big\n");
+		al5_err("firmware is too big");
 		return -EINVAL;
 	}
 
 	if (bl_fw->size > MCU_SRAM_SIZE) {
-		al5_err("bootloader firmware is too big\n");
+		al5_err("bootloader firmware is too big");
 		return -EINVAL;
 	}
 
@@ -123,13 +123,13 @@ static int request_all_firmwares(struct al5_codec_desc *codec,
 
 	err = request_firmware(fw, fw_file, codec->device);
 	if (err) {
-		al5_err("firmware file '%s' not found\n", fw_file);
+		al5_err("firmware file '%s' not found", fw_file);
 		goto out_failed;
 	}
 
 	err = request_firmware(bl_fw, bl_fw_file, codec->device);
 	if (err) {
-		al5_err("bootloader firmware file '%s' not found\n",
+		al5_err("bootloader firmware file '%s' not found",
 			bl_fw_file);
 		goto out_failed_firmware;
 	}
@@ -363,14 +363,14 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
 	if (res == NULL) {
-		dev_err(&pdev->dev, "Can't get resource\n");
+		dev_err(&pdev->dev, "Can't get resource");
 		err = -ENODEV;
 		goto fail;
 	}
 
 	irq = platform_get_irq(pdev, 0);
 	if (irq < 0) {
-		dev_err(&pdev->dev, "Failed to get IRQ\n");
+		dev_err(&pdev->dev, "Failed to get IRQ");
 		err = irq;
 		goto fail;
 	}
@@ -380,7 +380,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	codec->regs_size = res->end - res->start;
 
 	if (IS_ERR(codec->regs)) {
-		dev_err(&pdev->dev, "Can't map registers\n");
+		dev_err(&pdev->dev, "Can't map registers");
 		err = PTR_ERR(codec->regs);
 		goto fail;
 	}
@@ -393,7 +393,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	err = al5_mcu_interface_create(&mcu, codec->device, &config,
 				       codec->regs + AL5_MCU_INTERRUPT);
 	if (err) {
-		dev_err(&pdev->dev, "Can't create interface with mcu\n");
+		dev_err(&pdev->dev, "Can't create interface with mcu");
 		goto fail;
 	}
 
@@ -401,7 +401,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 
 	err = alloc_mcu_caches(codec);
 	if (err) {
-		dev_err(&pdev->dev, "icache failed to be allocated\n");
+		dev_err(&pdev->dev, "icache failed to be allocated");
 		goto fail;
 	}
 
@@ -411,7 +411,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 					al5_irq_handler,
 					IRQF_SHARED, device_name, codec);
 	if (err) {
-		dev_err(&pdev->dev, "Failed to request IRQ #%d -> :%d\n",
+		dev_err(&pdev->dev, "Failed to request IRQ #%d -> :%d",
 			irq, err);
 		goto free_mcu_caches;
 	}
