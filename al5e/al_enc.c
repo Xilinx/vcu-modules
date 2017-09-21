@@ -207,7 +207,7 @@ static int al5e_setup_codec_cdev(struct al5_codec_desc *codec, int minor)
 
 	device = device_create(module_class, NULL, dev, NULL, "allegroIP");
 	if (IS_ERR(device)) {
-		pr_err("device not created\n");
+		al5_err("device not created\n");
 		al5_clean_up_codec_cdev(codec);
 		return PTR_ERR(device);
 	}
@@ -230,19 +230,19 @@ static int al5e_probe(struct platform_device *pdev)
 
 	err = al5_codec_set_up(codec, pdev, max_users_nb);
 	if (err) {
-		pr_err("Failed to setup codec");
+		dev_err(&pdev->dev, "Failed to setup codec");
 		return err;
 	}
 	err = al5_codec_set_firmware(codec, AL5E_FIRMWARE,
 				     AL5E_BOOTLOADER_FIRMWARE);
 	if (err) {
-		pr_err("Failed to setup firmware");
+		dev_err(&pdev->dev, "Failed to setup firmware");
 		al5_codec_tear_down(codec);
 		return err;
 	}
 	err = al5e_setup_codec_cdev(codec, current_minor);
 	if (err) {
-		pr_err("Failed to setup cdev");
+		dev_err(&pdev->dev, "Failed to setup cdev");
 		al5_codec_tear_down(codec);
 		return err;
 	}

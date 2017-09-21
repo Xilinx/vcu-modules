@@ -265,24 +265,24 @@ static int al5d_codec_probe(struct platform_device *pdev)
 
 	if (scheduler_type != AL5D_AU_UNIT) {
 		codec->scheduler_type = AL5D_VCL_NAL_UNIT;
-		pr_info("Using per slice scheduler");
+		dev_info(&pdev->dev, "Using per slice scheduler");
 	}
 
 	err = al5_codec_set_up(codec, pdev, max_users_nb);
 	if (err) {
-		pr_err("Failed to setup codec");
+		dev_err(&pdev->dev, "Failed to setup codec");
 		return err;
 	}
 	err = al5_codec_set_firmware(codec, AL5D_FIRMWARE,
 				     AL5D_BOOTLOADER_FIRMWARE);
 	if (err) {
-		pr_err("Failed to setup firmware");
+		dev_err(&pdev->dev, "Failed to setup firmware");
 		al5_codec_tear_down(codec);
 		return err;
 	}
 	err = al5d_setup_codec_cdev(codec, current_minor);
 	if (err) {
-		pr_err("Failed to setup cdev");
+		dev_err(&pdev->dev, "Failed to setup cdev");
 		al5_codec_tear_down(codec);
 		return err;
 	}

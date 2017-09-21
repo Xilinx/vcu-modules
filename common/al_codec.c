@@ -162,7 +162,6 @@ static int setup_and_start_mcu(struct al5_codec_desc *codec,
 
 	start_mcu(codec);
 
-
 	return 0;
 }
 
@@ -219,6 +218,7 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 		al5_alloc_dma(codec->device, MCU_SUBALLOCATOR_SIZE);
 	if (!codec->suballoc_buf) {
 		err = -ENOMEM;
+		al5_err("Couldn't allocate mcu memory pool");
 		goto fail_alloc;
 	}
 
@@ -234,19 +234,25 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	err =
 		al5_queue_pop_timeout(&feedback,
 				      &root->queues[AL5_USER_MAIL_INIT]);
-	if (err)
+	if (err) {
+		al5_err("Mcu didn't start (no ping after startup)");
 		goto unlock;
+	}
 	al5_free_mail(feedback);
 
 	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
-	if (err)
+	if (err) {
+		al5_err("Couldn't send initial configuration to mcu");
 		goto unlock;
+	}
 
 	err =
 		al5_queue_pop_timeout(&feedback,
 				      &root->queues[AL5_USER_MAIL_INIT]);
-	if (err)
+	if (err) {
+		al5_err("Mcu didn't acknowledge its configuration");
 		goto unlock;
+	}
 	al5_free_mail(feedback);
 
 	mutex_unlock(&root->locks[AL5_USER_INIT]);
@@ -319,7 +325,6 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
 	if (err)
 		return err;
 
-
 	/* We need to bind root before starting the mcu because we are waiting
 	 * for a sync msg
 	 */
@@ -380,7 +385,6 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		goto fail;
 	}
 
-
 	config.cmd_base = (unsigned long)codec->regs + MAILBOX_CMD;
 	config.cmd_size = MAILBOX_SIZE;
 	config.status_base = (unsigned long)codec->regs + MAILBOX_STATUS;
@@ -388,8 +392,10 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 
 	err = al5_mcu_interface_create(&mcu, codec->device, &config,
 				       codec->regs + AL5_MCU_INTERRUPT);
-	if (err)
+	if (err) {
+		dev_err(&pdev->dev, "Can't create interface with mcu\n");
 		goto fail;
+	}
 
 	al5_group_init(&codec->users_group, mcu, max_users_nb, codec->device);
 
@@ -411,7 +417,6 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	}
 
 	platform_set_drvdata(pdev, codec);
-
 
 	return 0;
 
