@@ -56,7 +56,7 @@ int al5_group_bind_user(struct al5_group *group, struct al5_user *user)
 		}
 	}
 	if (uid == -1) {
-		pr_err("Max user allocation reached\n");
+		dev_err(group->device, "Max user allocation reached\n");
 		err = -EAGAIN;
 		goto unlock;
 	}
@@ -86,8 +86,8 @@ struct al5_user *al5_group_user_from_uid(struct al5_group *group, int user_uid)
 	struct al5_user *user;
 
 	if (user_uid >= group->max_users_nb) {
-		pr_err("Received user id %d, expected less than %ld\n",
-		       user_uid, (unsigned long)group->max_users_nb);
+		dev_err(group->device, "Received user id %d, expected less than %ld\n",
+			user_uid, (unsigned long)group->max_users_nb);
 		user = NULL;
 	} else
 		user = group->users[user_uid];
@@ -110,7 +110,8 @@ struct al5_user *al5_group_user_from_chan_uid(struct al5_group *group,
 		if (hasChannelId(group->users[i], chan_uid))
 			return group->users[i];
 
-	pr_err("Cannot find channel from chan_uid %d received\n", chan_uid);
+	dev_err(group->device, "Received chan_uid %d. No corresponding channel",
+		chan_uid);
 
 	return NULL;
 }
@@ -134,13 +135,13 @@ static void destroy_orphan_channel(struct al5_group *group, int chan_uid)
 	return;
 
 fail:
-	pr_err("Couldn't destroy orphan mcu channel\n");
+	dev_err(group->device, "Couldn't destroy orphan mcu channel\n");
 }
 
-void print_cannot_retrieve_user(u32 mail_uid)
+void print_cannot_retrieve_user(struct device *dev, u32 mail_uid)
 {
-	pr_err("Mail of uid %d received related to inexistant user\n",
-	       mail_uid);
+	dev_err(dev, "Mail of uid %d received related to inexistant user\n",
+		mail_uid);
 }
 
 bool should_destroy_channel_on_bad_feedback(u32 mail_uid)
@@ -184,7 +185,7 @@ int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 	struct al5_user *user = retrieve_user(group, mail);
 
 	if (user == NULL) {
-		print_cannot_retrieve_user(al5_mail_get_uid(mail));
+		print_cannot_retrieve_user(group->device, al5_mail_get_uid(mail));
 		return -1;
 	}
 
