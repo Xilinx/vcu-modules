@@ -232,7 +232,7 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 		goto fail_lock;
 
 	err = al5_queue_pop_timeout(&feedback,
-                        &root->queues[AL5_USER_MAIL_INIT]);
+				    &root->queues[AL5_USER_MAIL_INIT]);
 	if (err) {
 		al5_err("Mcu didn't start (no ping after startup, is mcu enabled ?)");
 		goto unlock;
