@@ -145,7 +145,7 @@ int al5e_user_create_channel(struct al5_user *user,
 	err = check_and_affect_chan_uid(user, fb_message.chan_uid);
 	if (err) {
 		dev_err(user->device,
-			"VCU: unavailable resources or wrong configuration\n");
+			"VCU: unavailable resources or wrong configuration");
 		goto fail;
 	}
 
@@ -168,7 +168,7 @@ fail_allocate:
 	al5_user_destroy_channel(user, 0);
 	return err;
 fail:
-	dev_err(user->device, "Channel wasn't created.\n");
+	dev_err(user->device, "Channel wasn't created.");
 unlock:
 	mutex_unlock(&user->locks[AL5_USER_CREATE]);
 	return err;
@@ -184,8 +184,7 @@ int al5e_user_encode_one_frame(struct al5_user *user,
 		return err;
 
 	if (!al5_chan_is_created(user)) {
-		dev_err(user->device,
-			"Cannot encode frame until channel is configured\n");
+		dev_err(user->device, "Cannot encode frame until channel is configured");
 		err = -EPERM;
 		goto unlock;
 	}
