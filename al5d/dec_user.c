@@ -45,7 +45,7 @@ static int init_chan(struct al5_user *user, struct al5_mail *mail)
 	user->chan_uid = al5_mail_get_chan_uid(mail);
 	err = !al5_chan_is_created(user);
 	if (err) {
-		pr_err("Chan uid is BAD");
+		dev_err(user->device, "Chan uid is BAD");
 		return -EINVAL;
 	}
 
@@ -90,7 +90,7 @@ int al5d_user_create_channel(struct al5_user *user,
 	return 0;
 
 unlock:
-	pr_err("Channel wasn't created.\n");
+	dev_err(user->device, "Channel wasn't created.\n");
 	mutex_unlock(&user->locks[AL5_USER_CREATE]);
 	return err;
 }
@@ -106,7 +106,8 @@ int al5d_user_decode_one_slice(struct al5_user *user,
 		return err;
 
 	if (!al5_chan_is_created(user)) {
-		pr_err("Cannot decode slice until channel is configured on MCU");
+		dev_err(user->device,
+			"Cannot decode slice until channel is configured on MCU");
 		err = -EPERM;
 		goto unlock;
 	}
@@ -130,7 +131,8 @@ int al5d_user_decode_one_frame(struct al5_user *user,
 		return err;
 
 	if (!al5_chan_is_created(user)) {
-		pr_err("Cannot decode frame until channel is configured on MCU");
+		dev_err(user->device,
+			"Cannot decode frame until channel is configured on MCU");
 		err = -EPERM;
 		goto unlock;
 	}
