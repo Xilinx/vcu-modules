@@ -48,6 +48,7 @@ int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
 	spin_lock_init(&(*mcu)->read_lock);
 	spin_lock_init(&(*mcu)->write_lock);
 	(*mcu)->interrupt_register = mcu_interrupt_register;
+	(*mcu)->dev = device;
 
 	return 0;
 }
@@ -73,7 +74,7 @@ int al5_mcu_send(struct mcu_mailbox_interface *mcu, struct al5_mail *mail)
 	spin_unlock(&mcu->write_lock);
 
 	if (error)
-		pr_err("Cannot write in mailbox !");
+		dev_err(mcu->dev, "Cannot write in mailbox !");
 
 	return error;
 }

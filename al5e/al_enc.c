@@ -207,7 +207,7 @@ static int al5e_setup_codec_cdev(struct al5_codec_desc *codec, int minor)
 
 	device = device_create(module_class, NULL, dev, NULL, "allegroIP");
 	if (IS_ERR(device)) {
-		al5_err("device not created\n");
+		pr_err("device not created\n");
 		al5_clean_up_codec_cdev(codec);
 		return PTR_ERR(device);
 	}

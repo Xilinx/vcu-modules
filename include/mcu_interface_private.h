@@ -30,7 +30,7 @@ struct mcu_mailbox_interface {
 	spinlock_t read_lock;
 	spinlock_t write_lock;
 	void *interrupt_register;
-
+	struct device *dev;
 };
 
 #endif

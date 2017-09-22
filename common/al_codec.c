@@ -231,9 +231,8 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	if (err == -EINTR)
 		goto fail_lock;
 
-	err =
-		al5_queue_pop_timeout(&feedback,
-				      &root->queues[AL5_USER_MAIL_INIT]);
+	err = al5_queue_pop_timeout(&feedback,
+                        &root->queues[AL5_USER_MAIL_INIT]);
 	if (err) {
 		al5_err("Mcu didn't start (no ping after startup, is mcu enabled ?)");
 		goto unlock;
@@ -246,9 +245,7 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 		goto unlock;
 	}
 
-	err =
-		al5_queue_pop_timeout(&feedback,
-				      &root->queues[AL5_USER_MAIL_INIT]);
+	err = al5_queue_pop_timeout(&feedback, &root->queues[AL5_USER_MAIL_INIT]);
 	if (err) {
 		al5_err("Mcu didn't acknowledge its configuration");
 		goto unlock;

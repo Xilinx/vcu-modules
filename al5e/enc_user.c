@@ -132,9 +132,8 @@ int al5e_user_create_channel(struct al5_user *user,
 	if (err)
 		goto fail;
 
-	err =
-		al5_queue_pop_timeout(&feedback,
-				      &user->queues[AL5_USER_MAIL_CREATE]);
+	err = al5_queue_pop_timeout(&feedback,
+				    &user->queues[AL5_USER_MAIL_CREATE]);
 	if (err)
 		goto fail;
 

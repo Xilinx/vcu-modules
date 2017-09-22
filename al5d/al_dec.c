@@ -145,7 +145,7 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 
 	case AL_MCU_DECODE_ONE_FRM:
 		if (codec->scheduler_type != AL5D_AU_UNIT) {
-			pr_err(
+			al5_err(
 				"invalid use of per frame decoding in per slice mode");
 			return -EINVAL;
 		}
@@ -163,7 +163,7 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 
 	case AL_MCU_DECODE_ONE_SLICE:
 		if (codec->scheduler_type != AL5D_VCL_NAL_UNIT) {
-			pr_err(
+			al5_err(
 				"invalid use of per slice decoding in per frame mode");
 			return -EINVAL;
 		}
