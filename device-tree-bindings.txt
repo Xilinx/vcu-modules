@@ -1,0 +1,7 @@
+al5e, al5d:
+
+al,mcu_ext_mem_size: specifies the size of the external memory of the mcu. default is MCU_SUBALLOCATOR_SIZE
+
+al5r:
+
+al,devicename: specifies the /dev/X name the created device should have. default is that the /dev/X node isn't created
