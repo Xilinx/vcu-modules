@@ -329,7 +329,7 @@ int al5_allocate_dmabuf(struct device *dev, int size, u32 *fd)
 
 	buffer = al5_alloc_dma(dev, size);
 	if (!buffer) {
-		dev_err(dev, "Can't alloc DMA buffer\n");
+		dev_err(dev, "Can't alloc DMA buffer of size %d", size);
 		return -ENOMEM;
 	}
 
