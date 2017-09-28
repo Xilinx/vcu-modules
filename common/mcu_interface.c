@@ -74,7 +74,7 @@ int al5_mcu_send(struct mcu_mailbox_interface *mcu, struct al5_mail *mail)
 	spin_unlock(&mcu->write_lock);
 
 	if (error)
-		dev_err_ratelimited(mcu->dev, "Cannot write in mailbox !");
+		dev_warn_ratelimited(mcu->dev, "mailbox is full, retry");
 
 	return error;
 }
