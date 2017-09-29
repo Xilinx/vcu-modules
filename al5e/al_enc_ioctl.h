@@ -41,9 +41,6 @@ struct al5_reconstructed_info {
 	__u32 poc;
 };
 
-/* Used to get back stream buffers at eos if you overcommited stream buffers */
-#define AL_MCU_GET_STREAM_BUFFER _IOWR('q', 30, __u64)
-
 struct al5_params {
 	__u32 size;
 	__u32 opaque_params[128];

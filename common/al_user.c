@@ -40,8 +40,6 @@ static int mail_to_queue(int mail_uid)
 	case AL_MCU_MSG_GET_RECONSTRUCTED_PICTURE:
 	case AL_MCU_MSG_RELEASE_RECONSTRUCTED_PICTURE:
 		return AL5_USER_MAIL_REC;
-	case AL_MCU_MSG_GET_STREAM_BUFFER:
-		return AL5_USER_MAIL_STREAM;
 	default:
 		return AL5_USER_MAIL_DEBUG;
 	}
@@ -88,7 +86,6 @@ static void user_queues_unlock(struct al5_user *user)
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_SC]);
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_CREATE]);
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_REC]);
-	al5_queue_unlock(&user->queues[AL5_USER_MAIL_STREAM]);
 }
 
 static void user_queues_lock(struct al5_user *user)
@@ -97,7 +94,6 @@ static void user_queues_lock(struct al5_user *user)
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_SC]);
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_CREATE]);
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_REC]);
-	al5_queue_lock(&user->queues[AL5_USER_MAIL_STREAM]);
 }
 
 void al5_user_init(struct al5_user *user, int uid,

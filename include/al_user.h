@@ -39,7 +39,6 @@ enum user_mail {
 	AL5_USER_MAIL_SC,
 	AL5_USER_MAIL_DEBUG,
 	AL5_USER_MAIL_REC,
-	AL5_USER_MAIL_STREAM,
 
 	/* always the last one */
 	AL5_USER_MAIL_NUMBER,
@@ -54,7 +53,6 @@ enum user_operations {
 	AL5_USER_SC,
 	AL5_USER_DEBUG,
 	AL5_USER_REC,
-	AL5_USER_STREAM,
 
 	/* always the last one */
 	AL5_USER_OPS_NUMBER
