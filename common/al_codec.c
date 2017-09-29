@@ -21,6 +21,7 @@
  */
 
 #include <linux/delay.h>
+#include <linux/of.h>
 
 #include "al_mail.h"
 #include "al_codec_mails.h"
@@ -213,6 +214,11 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	int err = 0;
 	struct mcu_init_msg init_msg;
 	struct al5_mail *feedback;
+
+	u32 mcu_memory_pool = MCU_SUBALLOCATOR_SIZE;
+	struct device_node *np = codec->device->of_node;
+
+	of_property_read_u32(np, "al,mcu_ext_mem_size", &mcu_memory_pool);
 
 	codec->suballoc_buf =
 		al5_alloc_dma(codec->device, MCU_SUBALLOCATOR_SIZE);
