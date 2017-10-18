@@ -163,7 +163,7 @@ int al5e_user_create_channel(struct al5_user *user,
 	goto unlock;
 
 fail_allocate:
-	pr_err("Failed internal buffer allocation, channel wasn't created\n");
+	pr_err("Failed internal buffer allocation, channel wasn't created");
 	mutex_unlock(&user->locks[AL5_USER_CREATE]);
 	al5_user_destroy_channel(user, 0);
 	return err;
