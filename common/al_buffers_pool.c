@@ -44,8 +44,11 @@ int al5_bufpool_allocate(struct al5_buffers_pool *bufpool,
 		bufpool->buffers[i] = al5_alloc_dma(device, size);
 		if (bufpool->buffers[i] == NULL)
 			goto fail_dma_allocation;
-		bufpool->handles[i] = al5_dmabuf_wrap(device, size,
-						      bufpool->buffers[i]);
+		bufpool->handles[i] = al5_dmabuf_wrap(device, size, bufpool->buffers[i]);
+		if (IS_ERR(bufpool->handles[i])) {
+			al5_free_dma(device, bufpool->buffers[i]);
+			goto fail_dma_allocation;
+		}
 		++bufpool->count;
 	}
 
