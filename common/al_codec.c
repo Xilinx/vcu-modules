@@ -215,27 +215,12 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	struct mcu_init_msg init_msg;
 	struct al5_mail *feedback;
 
-	u32 mcu_memory_pool = MCU_SUBALLOCATOR_SIZE;
+	u32 mcu_memory_pool;
 	struct device_node *np = codec->device->of_node;
-
-	of_property_read_u32(np, "al,mcu_ext_mem_size", &mcu_memory_pool);
-
-	codec->suballoc_buf =
-		al5_alloc_dma(codec->device, MCU_SUBALLOCATOR_SIZE);
-	if (!codec->suballoc_buf) {
-		err = -ENOMEM;
-		al5_err("Couldn't allocate mcu memory pool");
-		goto fail_alloc;
-	}
-
-	init_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
-	init_msg.size = codec->suballoc_buf->size;
-	set_frequency_hack(codec, &init_msg);
-	init_msg.scheduler_type = codec->scheduler_type;
 
 	err = mutex_lock_killable(&root->locks[AL5_USER_INIT]);
 	if (err == -EINTR)
-		goto fail_lock;
+		return err;
 
 	err = al5_queue_pop_timeout(&feedback,
 				    &root->queues[AL5_USER_MAIL_INIT]);
@@ -245,28 +230,42 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	}
 	al5_free_mail(feedback);
 
+	mcu_memory_pool = MCU_SUBALLOCATOR_SIZE;
+	of_property_read_u32(np, "al,mcu_ext_mem_size", &mcu_memory_pool);
+
+	codec->suballoc_buf = al5_alloc_dma(codec->device, MCU_SUBALLOCATOR_SIZE);
+	if (!codec->suballoc_buf) {
+		err = -ENOMEM;
+		al5_err("Couldn't allocate mcu memory pool");
+		goto unlock;
+	}
+
+	init_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
+	init_msg.size = codec->suballoc_buf->size;
+	set_frequency_hack(codec, &init_msg);
+	init_msg.scheduler_type = codec->scheduler_type;
+
 	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
 	if (err) {
 		al5_err("Couldn't send initial configuration to mcu");
-		goto unlock;
+		goto fail_msg;
 	}
 
 	err = al5_queue_pop_timeout(&feedback, &root->queues[AL5_USER_MAIL_INIT]);
 	if (err) {
 		al5_err("Mcu didn't acknowledge its configuration");
-		goto unlock;
+		goto fail_msg;
 	}
 	al5_free_mail(feedback);
 
 	mutex_unlock(&root->locks[AL5_USER_INIT]);
 	return 0;
 
-unlock:
-	mutex_unlock(&root->locks[AL5_USER_INIT]);
-fail_lock:
+fail_msg:
 	al5_free_dma(codec->device, codec->suballoc_buf);
 	codec->suballoc_buf = NULL;
-fail_alloc:
+unlock:
+	mutex_unlock(&root->locks[AL5_USER_INIT]);
 	return err;
 }
 
@@ -338,6 +337,9 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
 	err = setup_and_start_mcu(codec, fw, bl_fw);
 	if (err)
 		goto release_firmware;
+
+	/* after this, the mcu is set to send us an interrupt, we can't fail before
+	 * ack'ing it */
 
 	err = init_mcu(codec, &root);
 	if (err)
