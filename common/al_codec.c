@@ -233,7 +233,7 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	mcu_memory_pool = MCU_SUBALLOCATOR_SIZE;
 	of_property_read_u32(np, "al,mcu_ext_mem_size", &mcu_memory_pool);
 
-	codec->suballoc_buf = al5_alloc_dma(codec->device, MCU_SUBALLOCATOR_SIZE);
+	codec->suballoc_buf = al5_alloc_dma(codec->device, mcu_memory_pool);
 	if (!codec->suballoc_buf) {
 		err = -ENOMEM;
 		al5_err("Couldn't allocate mcu memory pool");
