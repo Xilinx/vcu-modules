@@ -344,7 +344,7 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
 	err = init_mcu(codec, &root);
 	if (err) {
 		stop_mcu(codec);
-                goto release_firmware;
+		goto release_firmware;
 	}
 	al5_group_unbind_user(&codec->users_group, &root);
 
