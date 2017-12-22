@@ -219,8 +219,13 @@ static const struct dma_buf_ops al5_dmabuf_ops = {
 	.detach		= al5_dmabuf_detach,
 	.map_dma_buf	= al5_dmabuf_map,
 	.unmap_dma_buf	= al5_dmabuf_unmap,
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
+	.map_atomic	= al5_dmabuf_kmap,
+	.map		= al5_dmabuf_kmap,
+#else
 	.kmap_atomic	= al5_dmabuf_kmap,
 	.kmap		= al5_dmabuf_kmap,
+#endif
 	.vmap		= al5_dmabuf_vmap,
 	.mmap		= al5_dmabuf_mmap,
 	.release	= al5_dmabuf_release,
