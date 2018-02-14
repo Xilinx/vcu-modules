@@ -182,33 +182,6 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 	return 0;
 }
 
-static void set_mcu_frequency_hack_addr(struct al5_codec_desc *codec,
-					struct mcu_init_msg *init_msg)
-{
-	init_msg->frequency_hack_addr = codec->icache->dma_handle -
-					codec->dcache_base_addr +
-					MCU_CACHE_OFFSET;
-}
-
-#define AL5_FREQUENCY_HACK_ADDR_LSB 0x8130
-#define AL5_FREQUENCY_HACK_ADDR_MSB 0x8134
-static void set_hw_frequency_hack(struct al5_codec_desc *codec)
-{
-	dma_addr_t dma_handle = codec->icache->dma_handle;
-	u32 icache_addr_lsb = (u32)dma_handle;
-	u32 icache_addr_msb = (sizeof(dma_handle) == 4) ? 0 : dma_handle >> 32;
-
-	al5_writel(icache_addr_lsb, AL5_FREQUENCY_HACK_ADDR_LSB);
-	al5_writel(icache_addr_msb, AL5_FREQUENCY_HACK_ADDR_MSB);
-}
-
-static void set_frequency_hack(struct al5_codec_desc *codec,
-			       struct mcu_init_msg *init_msg)
-{
-	set_mcu_frequency_hack_addr(codec, init_msg);
-	set_hw_frequency_hack(codec);
-}
-
 static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 {
 	int err = 0;
@@ -242,7 +215,6 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 
 	init_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
 	init_msg.size = codec->suballoc_buf->size;
-	set_frequency_hack(codec, &init_msg);
 
 	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
 	if (err) {
