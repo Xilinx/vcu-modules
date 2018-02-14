@@ -70,14 +70,6 @@ static int al5d_codec_major;
 static int al5d_codec_nr_devs = AL5_NR_DEVS;
 static struct class *module_class;
 
-#define AL5D_AU_UNIT 0
-#define AL5D_VCL_NAL_UNIT 1
-
-static int scheduler_type = AL5D_AU_UNIT;
-module_param(scheduler_type, int, 0);
-MODULE_PARM_DESC(scheduler_type,
-		 "choose the type of scheduler the driver should instanciate: per slice (0) or per frame (1)");
-
 static int ioctl_usage(struct al5_user *user, unsigned int cmd)
 {
 	pr_err("Unknown ioctl: 0x%.8X\n", cmd);
@@ -144,12 +136,6 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 		return ret;
 
 	case AL_MCU_DECODE_ONE_FRM:
-		if (codec->scheduler_type != AL5D_AU_UNIT) {
-			al5_err(
-				"invalid use of per frame decoding in per slice mode");
-			return -EINVAL;
-		}
-
 		ioctl_info("ioctl AL_MCU_DECODE_ONE_FRM from user %i",
 			   user->uid);
 		if (copy_from_user(&decode_msg, (void *)arg,
@@ -162,12 +148,6 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 		return ret;
 
 	case AL_MCU_DECODE_ONE_SLICE:
-		if (codec->scheduler_type != AL5D_VCL_NAL_UNIT) {
-			al5_err(
-				"invalid use of per slice decoding in per frame mode");
-			return -EINVAL;
-		}
-
 		ioctl_info("ioctl AL_MCU_DECODE_ONE_SLICE from user %i",
 			   user->uid);
 		if (copy_from_user(&decode_msg, (void *)arg,
@@ -262,11 +242,6 @@ static int al5d_codec_probe(struct platform_device *pdev)
 			     GFP_KERNEL);
 	if (codec == NULL)
 		return -ENOMEM;
-
-	if (scheduler_type != AL5D_AU_UNIT) {
-		codec->scheduler_type = AL5D_VCL_NAL_UNIT;
-		dev_info(&pdev->dev, "Using per slice scheduler");
-	}
 
 	err = al5_codec_set_up(codec, pdev, max_users_nb);
 	if (err) {

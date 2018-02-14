@@ -94,7 +94,6 @@ struct al5_codec_desc {
 	dma_addr_t dcache_base_addr;
 
 	struct al5_group users_group;
-	int scheduler_type;
 	int minor;
 };
 

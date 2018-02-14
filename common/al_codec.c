@@ -243,7 +243,6 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	init_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
 	init_msg.size = codec->suballoc_buf->size;
 	set_frequency_hack(codec, &init_msg);
-	init_msg.scheduler_type = codec->scheduler_type;
 
 	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
 	if (err) {
