@@ -21,7 +21,6 @@
  */
 
 #include <linux/delay.h>
-#include <linux/of_address.h>
 #include <linux/of.h>
 
 #include "al_mail.h"
@@ -49,17 +48,9 @@ static void set_icache_offset(struct al5_codec_desc *codec)
 
 static void set_dcache_offset(struct al5_codec_desc *codec)
 {
-	dma_addr_t mem_seg = codec->icache->dma_handle & 0xffffffff00000000;
-	dma_addr_t dma_handle = mem_seg - MCU_CACHE_OFFSET;
-	unsigned long msb = 0;
-	u32 dcache_offset_lsb;
-	u32 dcache_offset_msb;
-
-	if (mem_seg < MCU_CACHE_OFFSET)
-		msb = 0xFFFFFFFF;
-
-	dcache_offset_lsb = (u32)dma_handle;
-	dcache_offset_msb = (sizeof(dma_handle) == 4) ? msb : dma_handle >> 32;
+	dma_addr_t dma_handle = codec->dcache_base_addr - MCU_CACHE_OFFSET;
+	u32 dcache_offset_lsb = (u32)dma_handle;
+	u32 dcache_offset_msb = 0xFFFFFFFF;
 
 	al5_writel(dcache_offset_msb, AL5_DCACHE_ADDR_OFFSET_MSB);
 	al5_writel(dcache_offset_lsb, AL5_DCACHE_ADDR_OFFSET_LSB);
@@ -186,7 +177,6 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 
 	codec->dcache_base_addr = 0;
 
-	al5_writel(codec->icache->dma_handle >> 32, AXI_ADDR_OFFSET_IP);
 	setup_info("icache phy is at %p", (void *)codec->icache->dma_handle);
 
 	return 0;
@@ -341,8 +331,6 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		     size_t max_users_nb)
 {
 	int err, irq;
-	struct device_node *mem_node;
-	struct resource mem_res;
 	struct resource *res;
 	const char *device_name = dev_name(&pdev->dev);
 	struct mcu_mailbox_config config;
@@ -373,24 +361,6 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		err = PTR_ERR(codec->regs);
 		goto fail;
 	}
-
-	mem_node = of_parse_phandle(pdev->dev.of_node, "xlnx,dedicated-mem", 0);
-	if (mem_node) {
-		err = of_address_to_resource(mem_node, 0, &mem_res);
-		if (!err) {
-			err = dma_declare_coherent_memory(&pdev->dev,
-				mem_res.start, mem_res.start,
-				resource_size(&mem_res),
-				DMA_MEMORY_MAP | DMA_MEMORY_EXCLUSIVE);
-
-			err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
-			if (err) {
-				dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
-				goto fail;
-			}
-		}
-	}
-	of_node_put(mem_node);
 
 	config.cmd_base = (unsigned long)codec->regs + MAILBOX_CMD;
 	config.cmd_size = MAILBOX_SIZE;
@@ -431,7 +401,6 @@ free_mcu_caches:
 	al5_free_dma(codec->device, codec->icache);
 	codec->icache = NULL;
 fail:
-	dma_release_declared_memory(&pdev->dev);
 	return err;
 
 }
@@ -442,7 +411,6 @@ void al5_codec_tear_down(struct al5_codec_desc *codec)
 	al5_mcu_interface_destroy(codec->users_group.mcu, codec->device);
 	al5_free_dma(codec->device, codec->suballoc_buf);
 	al5_free_dma(codec->device, codec->icache);
-	dma_release_declared_memory(codec->device);
 }
 EXPORT_SYMBOL_GPL(al5_codec_tear_down);
 
