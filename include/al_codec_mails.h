@@ -60,7 +60,8 @@ enum al5_mail_uid {
 struct mcu_init_msg {
 	u32 addr;
 	u32 size;
-	u32 frequency_hack_addr;
+	u32 l2_size_in_bits;
+	u32 l2_color_bitdepth;
 };
 
 struct msg_info {

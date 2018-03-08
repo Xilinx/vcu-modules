@@ -192,6 +192,25 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 	return 0;
 }
 
+extern u32 get_l2_size_in_bits(void *);
+extern u32 get_l2_color_bitdepth(void *);
+
+static void set_l2_info(struct device *dev, struct mcu_init_msg *init_msg)
+{
+	void *parent = dev_get_drvdata(dev->parent);
+
+	if (!IS_ERR(parent))
+	{
+		init_msg->l2_size_in_bits = get_l2_size_in_bits(parent);
+		init_msg->l2_color_bitdepth = get_l2_color_bitdepth(parent);
+	}
+	else
+	{
+		init_msg->l2_size_in_bits = -1;
+		init_msg->l2_color_bitdepth = -1;
+	}
+}
+
 static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 {
 	int err = 0;
@@ -225,6 +244,8 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 
 	init_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
 	init_msg.size = codec->suballoc_buf->size;
+	set_l2_info(codec->device, &init_msg);
+	al5_info("l2 prefetch size:%d (bits), l2 color bitdepth:%d\n", init_msg.l2_size_in_bits, init_msg.l2_color_bitdepth);
 
 	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
 	if (err) {

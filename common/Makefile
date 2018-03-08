@@ -19,3 +19,9 @@ allegro-objs := \
 	mcu_interface.o \
 	mcu_utils.o \
 	al_group.o \
+
+ifeq ($(CONFIG_ALLEGRO_ONLY),1)
+  allegro-objs += al_l2_prefetch.o
+else
+  allegro-objs += xil_l2_prefetch.o
+endif
