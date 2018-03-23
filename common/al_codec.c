@@ -194,20 +194,20 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 
 u32 get_l2_size_in_bits(void *);
 u32 get_l2_color_bitdepth(void *);
+u32 get_num_cores(void *);
 
 static void set_l2_info(struct device *dev, struct mcu_init_msg *init_msg)
 {
 	void *parent = dev_get_drvdata(dev->parent);
 
-	if (!IS_ERR(parent))
-	{
+	if (!IS_ERR(parent)) {
 		init_msg->l2_size_in_bits = get_l2_size_in_bits(parent);
 		init_msg->l2_color_bitdepth = get_l2_color_bitdepth(parent);
-	}
-	else
-	{
+		init_msg->num_cores = get_num_cores(parent);
+	} else {
 		init_msg->l2_size_in_bits = -1;
 		init_msg->l2_color_bitdepth = -1;
+		init_msg->num_cores = -1;
 	}
 }
 
