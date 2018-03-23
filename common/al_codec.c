@@ -192,8 +192,8 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 	return 0;
 }
 
-extern u32 get_l2_size_in_bits(void *);
-extern u32 get_l2_color_bitdepth(void *);
+u32 get_l2_size_in_bits(void *);
+u32 get_l2_color_bitdepth(void *);
 
 static void set_l2_info(struct device *dev, struct mcu_init_msg *init_msg)
 {
