@@ -27,6 +27,10 @@ u32 get_num_cores(void *parent)
 {
 	struct xvcu_device *xvcu = (struct xvcu_device *)parent;
 
-	return xvcu_get_num_cores(xvcu);
+	u32 num_cores = xvcu_get_num_cores(xvcu);
+
+	if (num_cores == 0)
+		return -1;
+	return num_cores;
 }
 
