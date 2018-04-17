@@ -36,7 +36,7 @@ u32 get_num_cores(void *parent)
 
 u32 get_core_frequency(void *parent)
 {
-	(void)parent;
-	// not implemented yet
-	return -1;
+  struct xvcu_device *xvcu = (struct xvcu_device *)parent;
+
+  return xvcu_get_clock_frequency(xvcu);
 }
