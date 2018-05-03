@@ -17,3 +17,9 @@ u32 get_num_cores(void *parent)
 	(void)parent;
 	return -1;
 }
+
+u32 get_core_frequency(void *parent)
+{
+	(void)parent;
+	return -1;
+}

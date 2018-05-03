@@ -63,6 +63,7 @@ struct mcu_init_msg {
 	u32 l2_size_in_bits;
 	u32 l2_color_bitdepth;
 	u32 num_cores;
+	u32 core_frequency;
 };
 
 struct msg_info {
