@@ -150,20 +150,26 @@ int al5e_user_create_channel(struct al5_user *user,
 	}
 
 	err = allocate_channel_buffers(user, fb_message.buffers_needed);
-	if (err)
+	if (err) {
+		pr_err("Failed internal buffers allocation, channel wasn't created");
 		goto fail_allocate;
+	}
 
 	err = send_intermediate_buffers(user);
-	if (err)
+	if (err) {
+		pr_err("Failed to send intermediate buffers, channel wasn't created");
 		goto fail_allocate;
+	}
+
 	err = send_reference_buffers(user);
-	if (err)
+	if (err) {
+		pr_err("Failed to send reference buffers, channel wasn't created");
 		goto fail_allocate;
+	}
 
 	goto unlock;
 
 fail_allocate:
-	pr_err("Failed internal buffer allocation, channel wasn't created");
 	mutex_unlock(&user->locks[AL5_USER_CREATE]);
 	al5_user_destroy_channel(user, 0);
 	return err;
