@@ -113,6 +113,12 @@ void al5_user_init(struct al5_user *user, int uid,
 }
 EXPORT_SYMBOL_GPL(al5_user_init);
 
+void al5_user_destroy_channel_resources(struct al5_user *user)
+{
+	al5_bufpool_free(&user->int_buffers, user->device);
+	al5_bufpool_free(&user->rec_buffers, user->device);
+}
+
 int al5_user_destroy_channel(struct al5_user *user, int quiet)
 {
 	int err = 0;
@@ -154,8 +160,7 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 		al5_free_mail(mail);
 	}
 	user->chan_uid = BAD_CHAN;
-	al5_bufpool_free(&user->int_buffers, user->device);
-	al5_bufpool_free(&user->rec_buffers, user->device);
+	al5_user_destroy_channel_resources(user);
 
 unlock_mutexes:
 	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i)

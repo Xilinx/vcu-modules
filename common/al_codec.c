@@ -461,8 +461,22 @@ fail:
 }
 EXPORT_SYMBOL_GPL(al5_codec_set_up);
 
+void al5_user_destroy_channel_resources(struct al5_user *user);
+
 void al5_codec_tear_down(struct al5_codec_desc *codec)
 {
+	struct al5_group *group = &codec->users_group;
+	int i;
+
+	/* best effort to free resources if some channel are still lingering because
+	 * of some error */
+	for (i = 0; i < group->max_users_nb; ++i) {
+		struct al5_user *user = group->users[i];
+		if (user == NULL)
+			continue;
+		al5_user_destroy_channel_resources(user);
+		group->users[i] = NULL;
+	}
 	al5_mcu_interface_destroy(codec->users_group.mcu, codec->device);
 	al5_free_dma(codec->device, codec->suballoc_buf);
 	al5_free_dma(codec->device, codec->icache);
