@@ -110,6 +110,8 @@ void al5_user_init(struct al5_user *user, int uid,
 	user->mcu = mcu;
 	user->chan_uid = BAD_CHAN;
 	user->device = device;
+	al5_bufpool_init(&user->int_buffers);
+	al5_bufpool_init(&user->rec_buffers);
 }
 EXPORT_SYMBOL_GPL(al5_user_init);
 

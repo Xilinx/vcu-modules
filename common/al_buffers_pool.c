@@ -25,6 +25,11 @@
 #include <linux/dma-buf.h>
 #include "al_buffers_pool.h"
 
+void al5_bufpool_init(struct al5_buffers_pool *bufpool)
+{
+       memset(bufpool, 0, sizeof(*bufpool));
+}
+
 int al5_bufpool_allocate(struct al5_buffers_pool *bufpool,
 			 struct device *device, int count, int size)
 {
@@ -74,6 +79,8 @@ void al5_bufpool_free(struct al5_buffers_pool *bufpool, struct device *device)
 
 	kfree(bufpool->buffers);
 	kfree(bufpool->handles);
+	bufpool->buffers = NULL;
+	bufpool->handles = NULL;
 	memset(bufpool, 0, sizeof(*bufpool));
 }
 EXPORT_SYMBOL_GPL(al5_bufpool_free);

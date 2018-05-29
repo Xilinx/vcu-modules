@@ -29,6 +29,8 @@ struct al5_buffers_pool {
 	int *fds;
 };
 
+
+void al5_bufpool_init(struct al5_buffers_pool *bufpool);
 int al5_bufpool_allocate(struct al5_buffers_pool *bufpool,
 			 struct device *device, int count, int size);
 void al5_bufpool_free(struct al5_buffers_pool *bufpool, struct device *device);
