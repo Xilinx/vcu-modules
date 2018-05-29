@@ -131,7 +131,6 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 
 			goto relock_user_queues;
 		}
-
 	}
 
 	if (quiet) {

@@ -85,8 +85,9 @@ struct al5_user *al5_group_user_from_uid(struct al5_group *group, int user_uid)
 {
 	struct al5_user *user;
 
-	if (user_uid >= group->max_users_nb) {
-		dev_err(group->device, "Received user id %d, expected less than %ld\n",
+	if (user_uid >= group->max_users_nb || user_uid < 0) {
+		dev_err(group->device,
+			"Received user id %d, expected a value in [0..%ld]\n",
 			user_uid, (unsigned long)group->max_users_nb);
 		user = NULL;
 	} else
