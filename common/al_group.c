@@ -39,17 +39,6 @@ void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu,
 void al5_user_destroy_channel_resources(struct al5_user *user);
 void al5_group_deinit(struct al5_group *group)
 {
-	int i;
-
-	/* best effort to free resources if some channel are still lingering because
-	 * of some error */
-	for (i = 0; i < group->max_users_nb; ++i) {
-		struct al5_user *user = group->users[i];
-		if (user == NULL)
-			continue;
-		al5_user_destroy_channel_resources(user);
-		group->users[i] = NULL;
-	}
 	kfree(group->users);
 }
 
