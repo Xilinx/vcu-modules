@@ -301,6 +301,7 @@ int al5_codec_open(struct inode *inode, struct file *filp)
 }
 EXPORT_SYMBOL_GPL(al5_codec_open);
 
+void al5_user_destroy_channel_resources(struct al5_user *user);
 int al5_codec_release(struct inode *inode, struct file *filp)
 {
 	struct al5_filp_data *private_data = filp->private_data;
@@ -310,7 +311,21 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 	if (al5_chan_is_created(user)) {
 		const int quiet = 1;
 
-		al5_user_destroy_channel(user, quiet);
+		/* best effort to destroy the channel if it wasn't already */
+		int ret = -1;
+		int tries = 0;
+		while (ret != 0 && tries < 10000) {
+			ret = al5_user_destroy_channel(user, quiet);
+			++tries;
+		}
+		if (ret != 0)
+			dev_err(codec->device,
+				"Failed to destroy channel on mcu. Something went wrong");
+
+
+		/* best effort. If everything went wrong, still free the channel resources
+		 * to avoid leaks */
+		al5_user_destroy_channel_resources(user);
 	}
 	al5_group_unbind_user(&codec->users_group, user);
 	kzfree(user);
