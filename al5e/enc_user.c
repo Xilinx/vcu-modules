@@ -174,7 +174,7 @@ fail_allocate:
 	al5_user_destroy_channel(user, 0);
 	return err;
 fail:
-	dev_err(user->device, "Channel wasn't created.");
+	dev_err(user->device, "Channel wasn't created");
 unlock:
 	mutex_unlock(&user->locks[AL5_USER_CREATE]);
 	return err;
