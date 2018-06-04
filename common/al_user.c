@@ -109,6 +109,7 @@ void al5_user_init(struct al5_user *user, int uid,
 	user->uid = uid;
 	user->mcu = mcu;
 	user->chan_uid = BAD_CHAN;
+	user->checkpoint = NO_CHECKPOINT;
 	user->device = device;
 	al5_bufpool_init(&user->int_buffers);
 	al5_bufpool_init(&user->rec_buffers);
@@ -162,6 +163,7 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 		al5_free_mail(mail);
 	}
 	user->chan_uid = BAD_CHAN;
+	user->checkpoint = NO_CHECKPOINT;
 	al5_user_destroy_channel_resources(user);
 
 unlock_mutexes:
@@ -179,6 +181,12 @@ int al5_chan_is_created(struct al5_user *user)
 	return user->chan_uid != BAD_CHAN;
 }
 EXPORT_SYMBOL_GPL(al5_chan_is_created);
+
+int al5_have_checkpoint(struct al5_user *user)
+{
+	return user->checkpoint != NO_CHECKPOINT;
+}
+EXPORT_SYMBOL_GPL(al5_have_checkpoint);
 
 struct al5_mail *al5_user_get_mail(struct al5_user *user, u32 mail_uid)
 {

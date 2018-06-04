@@ -58,7 +58,9 @@ enum user_operations {
 	AL5_USER_OPS_NUMBER
 };
 
+#define NO_CHECKPOINT -1
 #define BAD_CHAN 0xff
+
 /* User structure
  * There is one User for each opening of the device file descriptor.
  * Being a user allow us to call ioctl's to communicate with mcu or ip
@@ -69,6 +71,8 @@ enum user_operations {
 struct al5_user {
 	int uid;
 	int chan_uid;
+
+	int checkpoint;
 
 	struct mcu_mailbox_interface *mcu;
 
@@ -87,9 +91,13 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet);
 int al5_check_and_send(struct al5_user *user, struct al5_mail *mail);
 
 int al5_chan_is_created(struct al5_user *user);
+
+int al5_have_checkpoint(struct al5_user *user);
+
 void al5_user_deliver(struct al5_user *user, struct al5_mail *mail);
 
 int al5_is_ready(struct al5_user *user, struct al5_mail **mail, int my_uid);
+
 int al5_status_is_ready(struct al5_user *user, struct al5_mail **mail,
 			int my_uid);
 
