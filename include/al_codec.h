@@ -50,9 +50,9 @@
 	dev_err(codec->device, format, ## __VA_ARGS__)
 
 /* MCU Mailbox */
-#define MAILBOX_CMD                     0x7800
-#define MAILBOX_STATUS                  0x7c00
-#define MAILBOX_SIZE                    (0x400 - 0x8)
+#define MAILBOX_CMD                     0x7000
+#define MAILBOX_STATUS                  0x7800
+#define MAILBOX_SIZE                    (0x800 - 0x8)
 
 /* MCU Bootloader */
 #define AL5_MCU_INTERRUPT_HANDLER       0x0010
