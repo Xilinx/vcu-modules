@@ -111,11 +111,41 @@ static int send_reference_buffers(struct al5_user *user)
 	return al5_check_and_send(user, mail);
 }
 
+static int try_to_create_channel(struct al5_user *user,
+			              struct al5_params *param,
+				      struct al5_channel_status *status,
+				      struct al5e_feedback_channel* fb_message)
+{
+	struct al5_mail *feedback;
+	int err =  al5_check_and_send(user, al5e_create_channel_param_msg(user->uid,
+								     param));
+	if (err)
+		return err;
+
+	err = al5_queue_pop_timeout(&feedback,
+				    &user->queues[AL5_USER_MAIL_CREATE]);
+	if (err)
+		return err;
+
+	*fb_message =
+		*(struct al5e_feedback_channel *)al5_mail_get_body(feedback);
+	al5_free_mail(feedback);
+	update_chan_param(status, fb_message);
+
+	err = check_and_affect_chan_uid(user, fb_message->chan_uid);
+	if (err) {
+		dev_err(user->device,
+			"VCU: unavailable resources or wrong configuration");
+		return err;
+	}
+
+	return 0;
+}
+
 int al5e_user_create_channel(struct al5_user *user,
 			     struct al5_params *param,
 			     struct al5_channel_status *status)
 {
-	struct al5_mail *feedback;
 	struct al5e_feedback_channel fb_message;
 	int err = mutex_lock_killable(&user->locks[AL5_USER_CREATE]);
 
@@ -127,27 +157,9 @@ int al5e_user_create_channel(struct al5_user *user,
 		goto fail;
 	}
 
-	err = al5_check_and_send(user, al5e_create_channel_param_msg(user->uid,
-								     param));
-	if (err)
+	err = try_to_create_channel(user, param, status, &fb_message);
+	if(err)
 		goto fail;
-
-	err = al5_queue_pop_timeout(&feedback,
-				    &user->queues[AL5_USER_MAIL_CREATE]);
-	if (err)
-		goto fail;
-
-	fb_message =
-		*(struct al5e_feedback_channel *)al5_mail_get_body(feedback);
-	al5_free_mail(feedback);
-	update_chan_param(status, &fb_message);
-
-	err = check_and_affect_chan_uid(user, fb_message.chan_uid);
-	if (err) {
-		dev_err(user->device,
-			"VCU: unavailable resources or wrong configuration");
-		goto fail;
-	}
 
 	err = allocate_channel_buffers(user, fb_message.buffers_needed);
 	if (err) {
