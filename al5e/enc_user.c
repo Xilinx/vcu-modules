@@ -30,6 +30,10 @@
 #include "al_dmabuf.h"
 #include "al_buffers_pool.h"
 
+#define CHECKPOINT_ALLOCATE_BUFFERS 1
+#define CHECKPOINT_SEND_INTERMEDIATE_BUFFERS 2
+#define CHECKPOINT_SEND_REFERENCE_BUFFERS 3
+
 static void update_chan_param(struct al5_channel_status *status,
 			      struct al5e_feedback_channel *message)
 {
@@ -112,13 +116,14 @@ static int send_reference_buffers(struct al5_user *user)
 }
 
 static int try_to_create_channel(struct al5_user *user,
-			              struct al5_params *param,
-				      struct al5_channel_status *status,
-				      struct al5e_feedback_channel* fb_message)
+				 struct al5_params *param,
+				 struct al5_channel_status *status,
+				 struct al5e_feedback_channel *fb_message)
 {
 	struct al5_mail *feedback;
 	int err =  al5_check_and_send(user, al5e_create_channel_param_msg(user->uid,
-								     param));
+									  param));
+
 	if (err)
 		return err;
 
@@ -142,51 +147,75 @@ static int try_to_create_channel(struct al5_user *user,
 	return 0;
 }
 
+static int channel_is_fully_created(struct al5_user *user)
+{
+	return al5_chan_is_created(user) && !al5_have_checkpoint(user);
+}
+
 int al5e_user_create_channel(struct al5_user *user,
 			     struct al5_params *param,
 			     struct al5_channel_status *status)
 {
-	struct al5e_feedback_channel fb_message;
+	struct al5e_feedback_channel fb_message = { 0 };
 	int err = mutex_lock_killable(&user->locks[AL5_USER_CREATE]);
 
 	if (err == -EINTR)
 		return err;
 
-	if (al5_chan_is_created(user)) {
+
+	if (channel_is_fully_created(user)) {
 		err = -EPERM;
+		pr_err("Channel already created!");
 		goto fail;
 	}
 
-	err = try_to_create_channel(user, param, status, &fb_message);
-	if(err)
-		goto fail;
-
-	err = allocate_channel_buffers(user, fb_message.buffers_needed);
-	if (err) {
-		pr_err("Failed internal buffers allocation, channel wasn't created");
-		goto fail_allocate;
+	if (!al5_have_checkpoint(user)) {
+		err = try_to_create_channel(user, param, status, &fb_message);
+		if (err) {
+			pr_err("Failed on create channel");
+			goto fail;
+		}
+		user->checkpoint = CHECKPOINT_ALLOCATE_BUFFERS;
 	}
 
-	err = send_intermediate_buffers(user);
-	if (err) {
-		pr_err("Failed to send intermediate buffers, channel wasn't created");
-		goto fail_allocate;
+	if (user->checkpoint == CHECKPOINT_ALLOCATE_BUFFERS) {
+		err = allocate_channel_buffers(user, fb_message.buffers_needed);
+		if (err) {
+			pr_err(
+				"Failed internal buffers allocation, channel wasn't created");
+			goto fail_allocate;
+		}
+		user->checkpoint = CHECKPOINT_SEND_INTERMEDIATE_BUFFERS;
 	}
 
-	err = send_reference_buffers(user);
-	if (err) {
-		pr_err("Failed to send reference buffers, channel wasn't created");
-		goto fail_allocate;
+	if (user->checkpoint == CHECKPOINT_SEND_INTERMEDIATE_BUFFERS) {
+		err = send_intermediate_buffers(user);
+		if (err) {
+			pr_err(
+				"Failed to send intermediate buffers, channel wasn't created");
+			goto fail;
+		}
+		user->checkpoint = CHECKPOINT_SEND_REFERENCE_BUFFERS;
+	}
+
+	if (user->checkpoint == CHECKPOINT_SEND_REFERENCE_BUFFERS) {
+		err = send_reference_buffers(user);
+		if (err) {
+			pr_err(
+				"Failed to send reference buffers, channel wasn't created");
+			goto fail;
+		}
+		user->checkpoint = NO_CHECKPOINT;
 	}
 
 	goto unlock;
 
 fail_allocate:
+	user->checkpoint = NO_CHECKPOINT;
 	mutex_unlock(&user->locks[AL5_USER_CREATE]);
 	al5_user_destroy_channel(user, 0);
 	return err;
 fail:
-	dev_err(user->device, "Channel wasn't created");
 unlock:
 	mutex_unlock(&user->locks[AL5_USER_CREATE]);
 	return err;
