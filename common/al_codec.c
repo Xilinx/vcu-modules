@@ -248,7 +248,8 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	init_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
 	init_msg.size = codec->suballoc_buf->size;
 	set_l2_info(codec->device, &init_msg);
-	al5_info("l2 prefetch size:%d (bits), l2 color bitdepth:%d\n", init_msg.l2_size_in_bits, init_msg.l2_color_bitdepth);
+	al5_info("l2 prefetch size:%d (bits), l2 color bitdepth:%d\n",
+		 init_msg.l2_size_in_bits, init_msg.l2_color_bitdepth);
 
 	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
 	if (err) {
@@ -418,9 +419,9 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		err = of_address_to_resource(mem_node, 0, &mem_res);
 		if (!err) {
 			err = dma_declare_coherent_memory(&pdev->dev,
-				mem_res.start, mem_res.start,
-				resource_size(&mem_res),
-				DMA_MEMORY_EXCLUSIVE);
+							  mem_res.start, mem_res.start,
+							  resource_size(&mem_res),
+							  DMA_MEMORY_EXCLUSIVE);
 
 			err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
 			if (err) {

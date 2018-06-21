@@ -27,7 +27,7 @@
 
 void al5_bufpool_init(struct al5_buffers_pool *bufpool)
 {
-       memset(bufpool, 0, sizeof(*bufpool));
+	memset(bufpool, 0, sizeof(*bufpool));
 }
 
 int al5_bufpool_allocate(struct al5_buffers_pool *bufpool,
