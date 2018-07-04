@@ -1,9 +1,6 @@
 /*
  * mcu_utils.h memory operation using only 32 bits aligned accesses
  *
- * Copyright (C) 2016, Sebastien Alaiwan (sebastien.alaiwan@allegrodvt.com)
- * Copyright (C) 2016, Kevin Grandemange (kevin.grandemange@allegrodvt.com)
- * Copyright (C) 2016, Antoine Gruzelle (antoine.gruzelle@allegrodvt.com)
  * Copyright (C) 2016, Allegro DVT (www.allegrodvt.com)
  *
  * This program is free software; you can redistribute it and/or modify it

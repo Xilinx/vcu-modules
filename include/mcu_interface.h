@@ -2,9 +2,6 @@
  * mcu_interface.h mcu interface of the vcu. implements access control to the
  * mailbox and the protocol to signal a message was sent to the mcu.
  *
- * Copyright (C) 2016, Sebastien Alaiwan (sebastien.alaiwan@allegrodvt.com)
- * Copyright (C) 2016, Kevin Grandemange (kevin.grandemange@allegrodvt.com)
- * Copyright (C) 2016, Antoine Gruzelle (antoine.gruzelle@allegrodvt.com)
  * Copyright (C) 2016, Allegro DVT (www.allegrodvt.com)
  *
  * This program is free software; you can redistribute it and/or modify it

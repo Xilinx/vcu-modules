@@ -1,7 +1,6 @@
 /*
  * al_list.h
  *
- * Copyright (C) 2016, Antoine Gruzelle (antoine.gruzelle@allegrodvt.com)
  * Copyright (C) 2016, Allegro DVT (www.allegrodvt.com)
  *
  * This program is free software; you can redistribute it and/or modify it
