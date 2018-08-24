@@ -22,7 +22,7 @@
 #include <linux/interrupt.h>
 
 #define AL5_NR_DEVS 4
-#define MAX_USERS_NB 64
+#define MAX_USERS_NB 256
 
 extern int max_users_nb;
 
