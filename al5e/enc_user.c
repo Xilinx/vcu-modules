@@ -336,11 +336,12 @@ int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)
 	msg->fd = get_user_rec_buffer(user, al5_mail_get_word(feedback, 1));
 	if (msg->fd == -1) {
 		err = -EINVAL;
-		goto unlock;
+		goto no_rec_buf;
 	}
 	msg->pic_struct = al5_mail_get_word(feedback, 2);
 	msg->poc = al5_mail_get_word(feedback, 3);
 
+no_rec_buf:
 	al5_free_mail(feedback);
 unlock:
 	mutex_unlock(&user->locks[AL5_USER_REC]);
