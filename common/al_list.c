@@ -52,14 +52,12 @@ struct al5_mail *al5_list_pop(struct al5_list **l)
 	if (*l == NULL)
 		return NULL;
 
-	{
-		struct al5_mail *ret = (*l)->mail;
-		struct al5_list *next = (*l)->next;
+	struct al5_mail *ret = (*l)->mail;
+	struct al5_list *next = (*l)->next;
 
-		kfree(*l);
-		*l = next;
-		return ret;
-	}
+	kfree(*l);
+	*l = next;
+	return ret;
 }
 
 void al5_list_empty_and_destroy(struct al5_list **l)
