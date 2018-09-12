@@ -106,9 +106,11 @@ EXPORT_SYMBOL_GPL(al5_mcu_recv);
 
 int al5_mcu_is_empty(struct mcu_mailbox_interface *mcu)
 {
+	spin_lock(&mcu->read_lock);
 	struct mailbox *mailbox = mcu->mcu_to_cpu;
 	u32 head_value = ioread32(mailbox->head);
 	u32 tail_value = ioread32(mailbox->tail);
+	spin_unlock(&mcu->read_lock);
 
 	return head_value == tail_value;
 }
