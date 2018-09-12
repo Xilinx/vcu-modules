@@ -28,15 +28,18 @@ int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
 			     void *mcu_interrupt_register)
 {
 	*mcu = devm_kmalloc(device, sizeof(*mcu), GFP_KERNEL);
+	if ((*mcu) == NULL)
+		goto fail_mcu;
+
 	(*mcu)->mcu_to_cpu = devm_kmalloc(device, sizeof(struct mailbox),
 					  GFP_KERNEL);
 	if (!(*mcu)->mcu_to_cpu)
-		return -ENOMEM;
+		goto fail_mcu_to_cpu;
 
 	(*mcu)->cpu_to_mcu = devm_kmalloc(device, sizeof(struct mailbox),
 					  GFP_KERNEL);
 	if (!(*mcu)->cpu_to_mcu)
-		return -ENOMEM;
+		goto fail_cpu_to_mcu;
 
 	al5_mailbox_init((*mcu)->cpu_to_mcu, (void *)config->cmd_base,
 			 config->cmd_size);
@@ -48,15 +51,27 @@ int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
 	(*mcu)->dev = device;
 
 	return 0;
+
+fail_cpu_to_mcu:
+	devm_kfree(device, (*mcu)->mcu_to_cpu);
+	(*mcu)->mcu_to_cpu = NULL;
+fail_mcu_to_cpu:
+	devm_kfree(device, *mcu);
+	(*mcu) = NULL;
+fail_mcu:
+	return -ENOMEM;
 }
 EXPORT_SYMBOL_GPL(al5_mcu_interface_create);
 
 void al5_mcu_interface_destroy(struct mcu_mailbox_interface *mcu,
 			       struct device *device)
 {
-	devm_kfree(device, mcu->mcu_to_cpu);
-	devm_kfree(device, mcu->cpu_to_mcu);
-	devm_kfree(device, mcu);
+	if (mcu->mcu_to_cpu != NULL)
+		devm_kfree(device, mcu->mcu_to_cpu);
+	if (mcu->cpu_to_mcu != NULL)
+		devm_kfree(device, mcu->cpu_to_mcu);
+	if (mcu != NULL)
+		devm_kfree(device, mcu);
 }
 EXPORT_SYMBOL_GPL(al5_mcu_interface_destroy);
 
