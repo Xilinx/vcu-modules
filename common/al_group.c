@@ -127,12 +127,14 @@ static void destroy_orphan_channel(struct al5_group *group, int chan_uid)
 
 	err = al5_mcu_send(group->mcu, mail);
 	if (err)
-		goto fail;
+		goto fail_send;
 
 	al5_signal_mcu(group->mcu);
 	al5_free_mail(mail);
 	return;
 
+fail_send:
+	al5_free_mail(mail);
 fail:
 	dev_err(group->device, "Couldn't destroy orphan mcu channel\n");
 }
