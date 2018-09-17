@@ -49,15 +49,18 @@ void al5_list_push(struct al5_list **l, struct al5_mail *mail)
 
 struct al5_mail *al5_list_pop(struct al5_list **l)
 {
+	struct al5_mail *mail;
+	struct al5_list *next;
+
 	if (*l == NULL)
 		return NULL;
 
-	struct al5_mail *ret = (*l)->mail;
-	struct al5_list *next = (*l)->next;
+	mail = (*l)->mail;
+	next = (*l)->next;
 
 	kfree(*l);
 	*l = next;
-	return ret;
+	return mail;
 }
 
 void al5_list_empty_and_destroy(struct al5_list **l)
