@@ -325,6 +325,7 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 		 * to avoid leaks */
 		al5_user_destroy_channel_resources(user);
 	}
+	al5_user_remove_residual_messages(user);
 	al5_group_unbind_user(&codec->users_group, user);
 	kzfree(user);
 	kzfree(filp->private_data);

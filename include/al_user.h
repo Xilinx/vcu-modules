@@ -84,6 +84,7 @@ struct al5_user {
 void al5_user_init(struct al5_user *user, int uid,
 		   struct mcu_mailbox_interface *mcu, struct device *device);
 int al5_user_destroy_channel(struct al5_user *user, int quiet);
+void al5_user_remove_residual_messages(struct al5_user *user);
 
 int al5_check_and_send(struct al5_user *user, struct al5_mail *mail);
 

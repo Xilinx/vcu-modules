@@ -93,6 +93,24 @@ static void user_queues_lock(struct al5_user *user)
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_REC]);
 }
 
+void al5_user_remove_residual_messages(struct al5_user *user)
+{
+	int queue_id;
+
+	for (queue_id = 0; queue_id < AL5_USER_MAIL_NUMBER; ++queue_id) {
+		struct al5_queue *q = &user->queues[queue_id];
+		struct al5_mail *mail;
+
+		al5_queue_unlock(q);
+		mail = al5_queue_pop(q);
+
+		while (mail) {
+			al5_free_mail(mail);
+			mail = al5_queue_pop(q);
+		}
+	}
+}
+
 void al5_user_init(struct al5_user *user, int uid,
 		   struct mcu_mailbox_interface *mcu, struct device *device)
 {
