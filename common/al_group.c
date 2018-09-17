@@ -201,12 +201,16 @@ void handle_mail(struct al5_group *group, struct al5_mail *mail)
 
 	if (mail_uid == AL_MCU_MSG_TRACE) {
 		al5_print_mcu_trace(mail);
+		al5_free_mail(mail);
 		return;
 	}
 
 	error = try_to_deliver_to_user(group, mail);
-	if (error && should_destroy_channel_on_bad_feedback(mail_uid))
-		destroy_orphan_channel(group, al5_mail_get_chan_uid(mail));
+	if (error) {
+		if (should_destroy_channel_on_bad_feedback(mail_uid))
+			destroy_orphan_channel(group, al5_mail_get_chan_uid(mail));
+		al5_free_mail(mail);
+	}
 }
 
 void read_mail(struct al5_group *group)

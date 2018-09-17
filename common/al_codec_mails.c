@@ -90,6 +90,5 @@ EXPORT_SYMBOL_GPL(al5_mail_get_chan_uid);
 void al5_print_mcu_trace(struct al5_mail *mail)
 {
 	mcu_info("Mcu trace: %s", (char *)al5_mail_get_body(mail));
-	al5_free_mail(mail);
 }
 EXPORT_SYMBOL_GPL(al5_print_mcu_trace);
