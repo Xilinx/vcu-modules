@@ -73,7 +73,7 @@
 #define AXI_ADDR_OFFSET_IP              0x9208
 
 /* MCU Cache */
-#define MCU_SUBALLOCATOR_SIZE           (1024 * 1024 * 16)      /* 16 MB */
+#define MCU_SUBALLOCATOR_SIZE           (1024 * 1024 * 32)      /* 32 MB */
 #define MCU_CACHE_OFFSET                0x80000000
 #define AL5_ICACHE_SIZE                 (1024 * 600)            /* 600 KB (for possible extensions) */
 #define MCU_SRAM_SIZE                   0x8000                  /* 32 kB */
