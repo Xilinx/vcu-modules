@@ -37,14 +37,18 @@
 
 #define al5_writel(val, reg) iowrite32(val, codec->regs + reg)
 #define al5_readl(reg) ioread32(codec->regs + reg)
-#define al5_dbg(format, ...)                             \
+
+#define al5_dbg(format, ...) \
 	dev_dbg(codec->device, format, ## __VA_ARGS__)
 
-#define al5_info(format, ...)                             \
+#define al5_info(format, ...) \
 	dev_info(codec->device, format, ## __VA_ARGS__)
 
-#define al5_err(format, ...)                             \
+#define al5_err(format, ...) \
 	dev_err(codec->device, format, ## __VA_ARGS__)
+
+#define al5_warn_ratelimited(format, ...) \
+	dev_warn_ratelimited(codec->device, format, ## __VA_ARGS__)
 
 /* MCU Mailbox */
 #define MAILBOX_CMD                     0x7000
