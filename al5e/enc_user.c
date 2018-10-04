@@ -17,7 +17,6 @@
  * this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 #include <linux/types.h>
-#include <linux/printk.h>
 #include <linux/string.h>
 #include <linux/mutex.h>
 
@@ -162,14 +161,14 @@ int al5e_user_create_channel(struct al5_user *user,
 
 	if (channel_is_fully_created(user)) {
 		err = -EPERM;
-		pr_err("Channel already created!");
+		dev_err(user->device, "Channel already created!");
 		goto fail;
 	}
 
 	if (!al5_have_checkpoint(user)) {
 		err = try_to_create_channel(user, param, status, &fb_message);
 		if (err) {
-			pr_err("Failed on create channel");
+			dev_warn_ratelimited(user->device, "Failed on create channel");
 			goto fail;
 		}
 		user->checkpoint = CHECKPOINT_ALLOCATE_BUFFERS;
@@ -178,8 +177,8 @@ int al5e_user_create_channel(struct al5_user *user,
 	if (user->checkpoint == CHECKPOINT_ALLOCATE_BUFFERS) {
 		err = allocate_channel_buffers(user, fb_message.buffers_needed);
 		if (err) {
-			pr_err(
-				"Failed internal buffers allocation, channel wasn't created");
+			dev_warn_ratelimited(user->device,
+					     "Failed internal buffers allocation, channel wasn't created");
 			goto fail_allocate;
 		}
 		user->checkpoint = CHECKPOINT_SEND_INTERMEDIATE_BUFFERS;
@@ -188,8 +187,8 @@ int al5e_user_create_channel(struct al5_user *user,
 	if (user->checkpoint == CHECKPOINT_SEND_INTERMEDIATE_BUFFERS) {
 		err = send_intermediate_buffers(user);
 		if (err) {
-			pr_err(
-				"Failed to send intermediate buffers, channel wasn't created");
+			dev_warn_ratelimited(user->device,
+					     "Failed to send intermediate buffers, channel wasn't created");
 			goto fail;
 		}
 		user->checkpoint = CHECKPOINT_SEND_REFERENCE_BUFFERS;
@@ -198,8 +197,8 @@ int al5e_user_create_channel(struct al5_user *user,
 	if (user->checkpoint == CHECKPOINT_SEND_REFERENCE_BUFFERS) {
 		err = send_reference_buffers(user);
 		if (err) {
-			pr_err(
-				"Failed to send reference buffers, channel wasn't created");
+			dev_warn_ratelimited(user->device,
+					     "Failed to send reference buffers, channel wasn't created");
 			goto fail;
 		}
 		user->checkpoint = NO_CHECKPOINT;
