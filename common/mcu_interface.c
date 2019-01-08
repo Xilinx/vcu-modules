@@ -32,19 +32,9 @@ int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
 	if (!*mcu)
 		return -ENOMEM;
 
-	(*mcu)->mcu_to_cpu = devm_kmalloc(device, sizeof(struct mailbox),
-					  GFP_KERNEL);
-	if (!(*mcu)->mcu_to_cpu)
-		return -ENOMEM;
-
-	(*mcu)->cpu_to_mcu = devm_kmalloc(device, sizeof(struct mailbox),
-					  GFP_KERNEL);
-	if (!(*mcu)->cpu_to_mcu)
-		return -ENOMEM;
-
-	al5_mailbox_init((*mcu)->cpu_to_mcu, (void *)config->cmd_base,
+	al5_mailbox_init(&(*mcu)->cpu_to_mcu, (void *)config->cmd_base,
 			 config->cmd_size);
-	al5_mailbox_init((*mcu)->mcu_to_cpu, (void *)config->status_base,
+	al5_mailbox_init(&(*mcu)->mcu_to_cpu, (void *)config->status_base,
 			 config->status_size);
 	spin_lock_init(&(*mcu)->read_lock);
 	spin_lock_init(&(*mcu)->write_lock);
@@ -58,8 +48,6 @@ EXPORT_SYMBOL_GPL(al5_mcu_interface_create);
 void al5_mcu_interface_destroy(struct mcu_mailbox_interface *mcu,
 			       struct device *device)
 {
-	devm_kfree(device, mcu->mcu_to_cpu);
-	devm_kfree(device, mcu->cpu_to_mcu);
 	devm_kfree(device, mcu);
 }
 EXPORT_SYMBOL_GPL(al5_mcu_interface_destroy);
@@ -71,7 +59,7 @@ int al5_mcu_send(struct mcu_mailbox_interface *mcu, struct al5_mail *mail)
 	int error;
 
 	spin_lock(&mcu->write_lock);
-	error = al5_mailbox_write(mcu->cpu_to_mcu, mail);
+	error = al5_mailbox_write(&mcu->cpu_to_mcu, mail);
 	spin_unlock(&mcu->write_lock);
 
 	if (error)
@@ -91,7 +79,7 @@ struct al5_mail *al5_mcu_recv(struct mcu_mailbox_interface *mcu)
 		return NULL;
 
 	spin_lock(&mcu->read_lock);
-	if (!al5_mailbox_read(mcu->mcu_to_cpu, mail, mail_size)) {
+	if (!al5_mailbox_read(&mcu->mcu_to_cpu, mail, mail_size)) {
 		dev_err(mcu->dev,
 			"BUG: mcu sent a message bigger than the maximum size.");
 		kfree(mail);
@@ -106,7 +94,7 @@ EXPORT_SYMBOL_GPL(al5_mcu_recv);
 
 int al5_mcu_is_empty(struct mcu_mailbox_interface *mcu)
 {
-	struct mailbox *mailbox = mcu->mcu_to_cpu;
+	struct mailbox *mailbox = &mcu->mcu_to_cpu;
 	u32 head_value;
 	u32 tail_value;
 
