@@ -35,7 +35,7 @@ int al5_list_push(struct al5_list **l, struct al5_mail *mail)
 	struct al5_list *first_pos = *l;
 
 	if (*l == NULL) {
-		*l = kmalloc(sizeof(**l), GFP_KERNEL);
+		*l = kmalloc(sizeof(**l), GFP_NOWAIT);
 		if (*l == NULL)
 			return -ENOMEM;
 		(*l)->mail = mail;
@@ -44,7 +44,7 @@ int al5_list_push(struct al5_list **l, struct al5_mail *mail)
 	}
 	while ((*l)->next != NULL)
 		*l = (*l)->next;
-	(*l)->next = kmalloc(sizeof(*((*l)->next)), GFP_KERNEL);
+	(*l)->next = kmalloc(sizeof(*((*l)->next)), GFP_NOWAIT);
 	if ((*l)->next == NULL)
 		return -ENOMEM;
 	(*l)->next->mail = mail;
