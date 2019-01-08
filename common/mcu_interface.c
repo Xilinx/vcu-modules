@@ -28,7 +28,7 @@ int al5_mcu_interface_create(struct mcu_mailbox_interface **mcu,
 			     struct mcu_mailbox_config *config,
 			     void *mcu_interrupt_register)
 {
-	*mcu = devm_kmalloc(device, sizeof(*mcu), GFP_KERNEL);
+	*mcu = devm_kmalloc(device, sizeof(struct mcu_mailbox_interface), GFP_KERNEL);
 	if (!*mcu)
 		return -ENOMEM;
 
