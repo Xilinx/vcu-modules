@@ -92,7 +92,7 @@ int al5_chan_is_created(struct al5_user *user);
 
 int al5_have_checkpoint(struct al5_user *user);
 
-void al5_user_deliver(struct al5_user *user, struct al5_mail *mail);
+int al5_user_deliver(struct al5_user *user, struct al5_mail *mail);
 
 int al5_is_ready(struct al5_user *user, struct al5_mail **mail, int my_uid);
 

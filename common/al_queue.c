@@ -81,15 +81,19 @@ struct al5_mail *al5_queue_pop(struct al5_queue *q)
 }
 EXPORT_SYMBOL_GPL(al5_queue_pop);
 
-void al5_queue_push(struct al5_queue *q, struct al5_mail *mail)
+/* return -ENOME if we failed to push, 0 otherwhise */
+int al5_queue_push(struct al5_queue *q, struct al5_mail *mail)
 {
 	unsigned long flags = 0;
+	int err;
 
 	spin_lock_irqsave(&q->lock, flags);
-	al5_list_push(&q->list, mail);
+	err = al5_list_push(&q->list, mail);
 	spin_unlock_irqrestore(&q->lock, flags);
 
 	wake_up_interruptible(&q->queue);
+
+	return err;
 }
 EXPORT_SYMBOL_GPL(al5_queue_push);
 

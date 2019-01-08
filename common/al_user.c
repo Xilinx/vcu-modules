@@ -69,12 +69,13 @@ int al5_check_and_send(struct al5_user *user, struct al5_mail *mail)
 }
 EXPORT_SYMBOL_GPL(al5_check_and_send);
 
-void al5_user_deliver(struct al5_user *user, struct al5_mail *mail)
+/* return -ENOMEM if we failed to deliver, 0 otherwhise */
+int al5_user_deliver(struct al5_user *user, struct al5_mail *mail)
 {
 	struct al5_queue *queue =
 		&user->queues[mail_to_queue(al5_mail_get_uid(mail))];
 
-	al5_queue_push(queue, mail);
+	return al5_queue_push(queue, mail);
 }
 
 static void user_queues_unlock(struct al5_user *user)

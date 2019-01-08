@@ -29,22 +29,29 @@ int al5_list_empty(const struct al5_list *l)
 	return l == NULL;
 }
 
-void al5_list_push(struct al5_list **l, struct al5_mail *mail)
+/* return -ENOMEM if we failed to create the list object, 0 otherwhise */
+int al5_list_push(struct al5_list **l, struct al5_mail *mail)
 {
 	struct al5_list *first_pos = *l;
 
 	if (*l == NULL) {
 		*l = kmalloc(sizeof(**l), GFP_KERNEL);
+		if (*l == NULL)
+			return -ENOMEM;
 		(*l)->mail = mail;
 		(*l)->next = NULL;
-		return;
+		return 0;
 	}
 	while ((*l)->next != NULL)
 		*l = (*l)->next;
 	(*l)->next = kmalloc(sizeof(*((*l)->next)), GFP_KERNEL);
+	if ((*l)->next == NULL)
+		return -ENOMEM;
 	(*l)->next->mail = mail;
 	(*l)->next->next = NULL;
 	*l = first_pos;
+
+	return 0;
 }
 
 struct al5_mail *al5_list_pop(struct al5_list **l)

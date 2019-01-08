@@ -181,17 +181,19 @@ struct al5_user *retrieve_user(struct al5_group *group, struct al5_mail *mail)
 	return user;
 }
 
+/* return -1 if we failed to retrieve the user, -ENOMEM if there was a memory
+ * shortage and 0 otherwhise */
+#define AL_NO_USER -1
 int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 {
 	struct al5_user *user = retrieve_user(group, mail);
 
 	if (user == NULL) {
 		print_cannot_retrieve_user(group->device, al5_mail_get_uid(mail));
-		return -1;
+		return AL_NO_USER;
 	}
 
-	al5_user_deliver(user, mail);
-	return 0;
+	return al5_user_deliver(user, mail);
 }
 
 void handle_mail(struct al5_group *group, struct al5_mail *mail)
@@ -206,11 +208,13 @@ void handle_mail(struct al5_group *group, struct al5_mail *mail)
 	}
 
 	error = try_to_deliver_to_user(group, mail);
-	if (error) {
+	if (error == AL_NO_USER) {
 		if (should_destroy_channel_on_bad_feedback(mail_uid))
 			destroy_orphan_channel(group, al5_mail_get_chan_uid(mail));
 		al5_free_mail(mail);
-	}
+	}else if (error == -ENOMEM)
+		dev_err(group->device,
+			"Failed to deliver mail to the user (memory shortage). Skipping...\n");
 }
 
 void read_mail(struct al5_group *group)

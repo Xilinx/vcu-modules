@@ -28,7 +28,7 @@ struct al5_list {
 
 void al5_list_init(struct al5_list **l);
 int al5_list_empty(const struct al5_list *l);
-void al5_list_push(struct al5_list **l, struct al5_mail *mail);
+int al5_list_push(struct al5_list **l, struct al5_mail *mail);
 struct al5_mail *al5_list_pop(struct al5_list **l);
 void al5_list_empty_and_destroy(struct al5_list **l);
 
