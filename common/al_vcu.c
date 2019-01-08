@@ -43,10 +43,8 @@ irqreturn_t al5_irq_handler(int irq, void *data)
 {
 	struct al5_codec_desc *codec = (struct al5_codec_desc *)data;
 
-	spin_lock(&codec->users_group.lock);
 	irq_info("Got irq from Mcu");
 	al5_group_read_mails(&codec->users_group);
-	spin_unlock(&codec->users_group.lock);
 
 	return IRQ_HANDLED;
 }

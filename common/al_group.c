@@ -186,7 +186,11 @@ struct al5_user *retrieve_user(struct al5_group *group, struct al5_mail *mail)
 #define AL_NO_USER -1
 int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 {
-	struct al5_user *user = retrieve_user(group, mail);
+	struct al5_user *user;
+
+	spin_lock(&group->lock);
+	user = retrieve_user(group, mail);
+	spin_unlock(&group->lock);
 
 	if (user == NULL) {
 		print_cannot_retrieve_user(group->device, al5_mail_get_uid(mail));
