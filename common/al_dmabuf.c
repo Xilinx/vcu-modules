@@ -45,8 +45,12 @@ struct al5_dmabuf_attachment {
 	enum dma_data_direction dma_dir;
 };
 
-static int al5_dmabuf_attach(struct dma_buf *dbuf, struct device *dev,
-			     struct dma_buf_attachment *dbuf_attach)
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 19, 0)
+/* device argument was removed */
+static int al5_dmabuf_attach(struct dma_buf *dbuf, struct dma_buf_attachment *dbuf_attach)
+#else
+static int al5_dmabuf_attach(struct dma_buf *dbuf, struct device* dev, struct dma_buf_attachment *dbuf_attach)
+#endif
 {
 	struct al5_dmabuf_priv *dinfo = dbuf->priv;
 
@@ -217,7 +221,10 @@ static const struct dma_buf_ops al5_dmabuf_ops = {
 	.map_dma_buf	= al5_dmabuf_map,
 	.unmap_dma_buf	= al5_dmabuf_unmap,
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(4, 12, 0)
+/* the map_atomic interface was removed after 4.19 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
 	.map_atomic	= al5_dmabuf_kmap,
+#endif
 	.map		= al5_dmabuf_kmap,
 #else
 	.kmap_atomic	= al5_dmabuf_kmap,
