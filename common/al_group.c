@@ -217,6 +217,11 @@ void read_mail(struct al5_group *group)
 {
 	struct al5_mail *mail = al5_mcu_recv(group->mcu);
 
+	if (!mail) {
+		dev_err(group->device, "Failed to get mcu mail. Skipping...\n");
+		return;
+	}
+
 	handle_mail(group, mail);
 }
 

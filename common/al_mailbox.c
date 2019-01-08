@@ -20,6 +20,7 @@
 #include <linux/io.h>
 
 #include "al_mailbox.h"
+#include "al_mail_private.h"
 #include "mcu_utils.h"
 
 const int header_size = 4;
@@ -124,17 +125,16 @@ static void write_data(struct mailbox *box, u8 *in_data, size_t size)
 	box->local_tail = tail_value;
 }
 
-static u8 *read_data(struct mailbox *box, size_t size)
+static u8 *read_data(struct mailbox *box, u8 *out_data, size_t size)
 {
-	u8 *out_data = kzalloc(size, GFP_KERNEL);
 	u32 head_value = ioread32(box->head);
 	u8 *data_iterator = out_data;
 
 	if (mailbox_is_wrapping(box->size, head_value, size))
 		read_in_mailbox_until_wrap(box, &size, &head_value,
 					   &data_iterator);
-	memcpy_fromio_32(data_iterator, box->data + head_value, size);
 
+	memcpy_fromio_32(data_iterator, box->data + head_value, size);
 	head_value = ((head_value + size + 3) / 4 * 4) % box->size;
 	iowrite32(head_value, box->head);
 
@@ -167,20 +167,33 @@ int al5_mailbox_write(struct mailbox *box, struct al5_mail *mail)
 }
 EXPORT_SYMBOL_GPL(al5_mailbox_write);
 
-struct al5_mail *al5_mailbox_read(struct mailbox *box)
+bool al5_mailbox_read(struct mailbox *box, struct al5_mail *mail, size_t mail_size)
 {
-	u8 *header = read_data(box, header_size);
-	u16 msg_uid = unserialize_msg_uid(header);
-	u16 body_size = unserialize_body_size(header);
-	struct al5_mail *mail = al5_mail_create(msg_uid, body_size);
+	u8 header[header_size];
+	u16 msg_uid;
+	u16 body_size;
+	size_t real_mail_size;
 
-	u8 *body = read_data(box, body_size);
+	read_data(box, header, header_size);
 
-	al5_mail_write(mail, body, body_size);
+	msg_uid = unserialize_msg_uid(header);
+	body_size = unserialize_body_size(header);
 
-	kfree(header);
-	kfree(body);
+	real_mail_size = al5_get_mail_alloc_size(body_size);
 
-	return mail;
+	/* we can't store this mail, it will be dropped */
+	if (mail_size < real_mail_size) {
+		pr_debug(
+			"BUG(%s) mail_size: %ld, real mail_size: %ld, body size: %d, msg uid: %d\n", __func__, mail_size, real_mail_size, body_size,
+			msg_uid);
+		return false;
+	}
+
+	al5_mail_init(mail, msg_uid, body_size);
+
+	read_data(box, mail->body, body_size);
+	/* for consistency, but noone should want to write after this mail */
+	mail->body_offset += body_size;
+	return true;
 }
 EXPORT_SYMBOL_GPL(al5_mailbox_read);

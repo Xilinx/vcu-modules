@@ -19,6 +19,7 @@
 
 #include "mcu_interface_private.h"
 #include "mcu_utils.h"
+#include "al_mail_private.h"
 
 #include <linux/printk.h>
 
@@ -82,10 +83,21 @@ EXPORT_SYMBOL_GPL(al5_mcu_send);
 
 struct al5_mail *al5_mcu_recv(struct mcu_mailbox_interface *mcu)
 {
-	struct al5_mail *mail;
+	/* this is also the maximum size of the al5_params opaque struct */
+	const size_t mail_size = al5_get_mail_alloc_size(128 * 4);
+	struct al5_mail *mail = kmalloc(mail_size, GFP_KERNEL);
+
+	if (!mail)
+		return NULL;
 
 	spin_lock(&mcu->read_lock);
-	mail = al5_mailbox_read(mcu->mcu_to_cpu);
+	if (!al5_mailbox_read(mcu->mcu_to_cpu, mail, mail_size)) {
+		dev_err(mcu->dev,
+			"BUG: mcu sent a message bigger than the maximum size.");
+		kfree(mail);
+		mail = NULL;
+	}
+
 	spin_unlock(&mcu->read_lock);
 
 	return mail;
