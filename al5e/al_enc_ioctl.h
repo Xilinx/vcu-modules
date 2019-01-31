@@ -36,6 +36,8 @@ struct al5_reconstructed_info {
 	__u32 fd;
 	__u32 pic_struct;
 	__u32 poc;
+	__u32 width;
+	__u32 height;
 };
 
 struct al5_params {

@@ -337,8 +337,15 @@ int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)
 		err = -EINVAL;
 		goto no_rec_buf;
 	}
+
 	msg->pic_struct = al5_mail_get_word(feedback, 2);
 	msg->poc = al5_mail_get_word(feedback, 3);
+	if (al5_mail_get_size(feedback) > 3 * sizeof(u32)) {
+		msg->width = al5_mail_get_word(feedback, 4);
+		msg->height = al5_mail_get_word(feedback, 5);
+	} else
+		dev_err(user->device,
+			"Your firmware version is too old, you need to update");
 
 no_rec_buf:
 	al5_free_mail(feedback);
