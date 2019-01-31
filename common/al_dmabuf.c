@@ -77,6 +77,11 @@ static int al5_dmabuf_attach(struct dma_buf *dbuf, struct device* dev, struct dm
 
 	for (i = 0; i < sgt->orig_nents; ++i) {
 		sg_set_page(wr, sg_page(rd), rd->length, rd->offset);
+		/* map the scatter gather list. As the mapping is coherent we only add
+		 * the dma address and the dma length in the scatterlist without doing
+		 * the costly cache invalidation */
+		sg_dma_address(wr) = dinfo->buffer->dma_handle;
+		sg_dma_len(wr) = rd->length;
 		rd = sg_next(rd);
 		wr = sg_next(wr);
 	}
@@ -99,11 +104,6 @@ static void al5_dmabuf_detach(struct dma_buf *dbuf,
 
 	sgt = &attach->sgt;
 
-	/* release the scatterlist cache */
-	if (attach->dma_dir != DMA_NONE)
-		dma_unmap_sg(db_attach->dev, sgt->sgl, sgt->orig_nents,
-			     attach->dma_dir);
-
 	sg_free_table(sgt);
 	kfree(attach);
 	db_attach->priv = NULL;
@@ -123,21 +123,6 @@ static struct sg_table *al5_dmabuf_map(struct dma_buf_attachment *db_attach,
 	if (attach->dma_dir == dma_dir) {
 		mutex_unlock(lock);
 		return sgt;
-	}
-
-	if (attach->dma_dir != DMA_NONE) {
-		dma_unmap_sg(db_attach->dev, sgt->sgl, sgt->orig_nents,
-			     attach->dma_dir);
-		attach->dma_dir = DMA_NONE;
-	}
-
-	sgt->nents = dma_map_sg(db_attach->dev, sgt->sgl, sgt->orig_nents,
-				dma_dir);
-
-	if (!sgt->nents) {
-		pr_err("failed to map scatterlist\n");
-		mutex_unlock(lock);
-		return ERR_PTR(-EIO);
 	}
 
 	attach->dma_dir = dma_dir;
