@@ -187,17 +187,21 @@ struct al5_user *retrieve_user(struct al5_group *group, struct al5_mail *mail)
 int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 {
 	struct al5_user *user;
+	int ret = AL_NO_USER;
 
 	spin_lock(&group->lock);
 	user = retrieve_user(group, mail);
-	spin_unlock(&group->lock);
 
 	if (user == NULL) {
 		print_cannot_retrieve_user(group->device, al5_mail_get_uid(mail));
-		return AL_NO_USER;
+		goto unlock;
 	}
 
-	return al5_user_deliver(user, mail);
+	ret = al5_user_deliver(user, mail);
+
+unlock:
+	spin_unlock(&group->lock);
+	return ret;
 }
 
 void handle_mail(struct al5_group *group, struct al5_mail *mail)
