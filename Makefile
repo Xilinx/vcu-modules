@@ -9,6 +9,7 @@ endif
 obj-m	+= common/
 obj-m	+= al5e/
 obj-m	+= al5d/
+obj-m	+= dmaproxy/
 
 all:
 	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) O=$(O) modules
