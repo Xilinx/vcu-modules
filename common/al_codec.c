@@ -211,7 +211,8 @@ static void set_l2_info(struct device *dev, struct mcu_init_msg *init_msg)
 	}
 }
 
-static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
+static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root,
+		    bool plugin_enabled)
 {
 	int err = 0;
 	struct mcu_init_msg init_msg;
@@ -247,6 +248,7 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root)
 	set_l2_info(codec->device, &init_msg);
 	al5_info("l2 prefetch size:%d (bits), l2 color bitdepth:%d\n",
 		 init_msg.l2_size_in_bits, init_msg.l2_color_bitdepth);
+	init_msg.plugin_enabled = plugin_enabled;
 
 	err = al5_check_and_send(root, create_init_msg(root->uid, &init_msg));
 	if (err) {
@@ -340,6 +342,7 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
 	const struct firmware *bl_fw = NULL;
 	struct al5_user root;
 	int err;
+	bool plugin_enabled;
 
 	err = request_all_firmwares(codec, &fw, &bl_fw, fw_file, bl_fw_file);
 	if (err)
@@ -358,8 +361,9 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
 
 	/* after this, the mcu is set to send us an interrupt, we can't fail before
 	 * ack'ing it */
+	plugin_enabled = fw->size > AL5_RC_PLUGIN_CODE_START;
 
-	err = init_mcu(codec, &root);
+	err = init_mcu(codec, &root, plugin_enabled);
 	if (err) {
 		stop_mcu(codec);
 		goto release_firmware;

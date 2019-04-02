@@ -61,6 +61,7 @@ struct mcu_init_msg {
 	u32 l2_color_bitdepth;
 	u32 num_cores;
 	u32 core_frequency;
+	u32 plugin_enabled;
 };
 
 struct msg_info {
