@@ -17,6 +17,7 @@
 #include <linux/mutex.h>
 #include <linux/of_dma.h>
 #include <linux/uaccess.h>
+#include <linux/slab.h>
 
 #include "dmaproxy.h"
 
