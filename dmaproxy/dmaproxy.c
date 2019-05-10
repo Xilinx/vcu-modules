@@ -26,6 +26,11 @@ static struct cdev dmaproxy_cdev;
 static struct class *dmaproxy_cl;
 #define MINOR_CNT 8
 
+struct dmacopy_done {
+	bool		done;
+	wait_queue_head_t       wait;
+};
+
 struct dmaproxy_data {
 	struct dma_chan  *chan;
 	struct dma_buf	*src_dbuf;
@@ -36,19 +41,16 @@ struct dmaproxy_data {
 	struct sg_table  *dst_sgt;
 	dma_addr_t  src_buf;
 	dma_addr_t  dst_buf;
+	struct dmacopy_done	done;
 };
 
-struct dmacopy_done {
-	bool                    done;
-	wait_queue_head_t       *wait;
-};
 
 static void dmacopy_callback(void *arg)
 {
 	struct dmacopy_done *done = arg;
 
 	done->done = true;
-	wake_up_all(done->wait);
+	wake_up(&done->wait);
 }
 
 static int dmaproxy_open(struct inode *i, struct file *f)
@@ -188,9 +190,7 @@ static void dmabuf_cleanup(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t d
 
 static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t dmaproxy)
 {
-	DECLARE_WAIT_QUEUE_HEAD_ONSTACK(done_wait);
 	struct dma_device	*dma_dev;
-	struct dmacopy_done	done = { .wait = &done_wait };
 	struct dma_chan	*chan;
 	struct dma_async_tx_descriptor	*tx = NULL;
 	struct dmaengine_unmap_data	*um = NULL;
@@ -235,9 +235,10 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 		goto exit;
 	}
 
-	done.done = false;
+	dmaproxy_data->done.done = false;
+	init_waitqueue_head(&dmaproxy_data->done.wait);
 	tx->callback = dmacopy_callback;
-	tx->callback_param = &done;
+	tx->callback_param = &dmaproxy_data->done;
 	cookie = tx->tx_submit(tx);
 
 	if (dma_submit_error(cookie)) {
@@ -248,12 +249,12 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	dma_async_issue_pending(chan);
 
 	/*FIXME: Set some X ms of timeout here */
-	wait_event_timeout(done_wait, done.done,
+	wait_event_timeout(dmaproxy_data->done.wait, dmaproxy_data->done.done,
 			   msecs_to_jiffies(-1));
 
 	status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
 
-	if (!done.done) {
+	if (!dmaproxy_data->done.done) {
 		pr_err("timeout error while dma copy\n");
 		ret = -ETIME;
 		goto exit;
