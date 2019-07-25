@@ -33,10 +33,6 @@
 static void update_chan_param(struct al5_channel_status *status,
 			      struct al5e_feedback_channel *message)
 {
-	status->options = message->options;
-	status->tools = message->tools;
-	status->num_core = (u8)message->num_core;
-	status->pps_param = message->pps_param;
 	status->error_code = message->error_code;
 }
 

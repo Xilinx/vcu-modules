@@ -29,12 +29,7 @@
 static void update_chan_param(struct al5_channel_status *status,
 			      struct al5_mail *mail)
 {
-	u32 tmp_num_core;
-
-	memcpy(&tmp_num_core, mail->body + 8, 4);
-	memcpy(&status->error_code, mail->body + 12, 4);
-
-	status->num_core = (u8)tmp_num_core;
+	memcpy(&status->error_code, mail->body + 8, 4);
 }
 
 static int init_chan(struct al5_user *user, struct al5_mail *mail)

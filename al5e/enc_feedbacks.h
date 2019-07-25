@@ -31,10 +31,6 @@ struct al5_channel_buffers {
 struct al5e_feedback_channel {
 	u32 chan_uid;
 	u32 user_uid;
-	u32 options;
-	u32 tools;
-	u32 num_core;
-	u32 pps_param;
 	struct al5_channel_buffers buffers_needed;
 	u32 error_code;
 };

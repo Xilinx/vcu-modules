@@ -30,7 +30,6 @@
 #define AL_MCU_DECODE_ONE_SLICE _IOWR('q', 18, struct al5_decode_msg)
 
 struct al5_channel_status {
-	__u8 num_core;
 	__u32 error_code;
 };
 
