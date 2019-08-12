@@ -18,13 +18,13 @@
 
 #include "al_codec.h"
 
-int al5_setup_chrdev_region(int *major, int minor, int nb_devs, char *desc)
+int al5_setup_chrdev_region(int *major, int base_minor, int nb_devs, char *desc)
 {
 	dev_t dev = 0;
 	int err;
 
 	if (*major == 0) {
-		err = alloc_chrdev_region(&dev, minor, nb_devs, desc);
+		err = alloc_chrdev_region(&dev, base_minor, nb_devs, desc);
 		*major = MAJOR(dev);
 
 		if (err) {
