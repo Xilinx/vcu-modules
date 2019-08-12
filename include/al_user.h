@@ -1,7 +1,7 @@
 /*
  * al_user.h high level function to write messages in the mailbox
  *
- * Copyright (C) 2016, Allegro DVT (www.allegrodvt.com)
+ * Copyright (C) 2019, Allegro DVT (www.allegrodvt.com)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published by

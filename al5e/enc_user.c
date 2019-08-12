@@ -2,7 +2,7 @@
  * enc_user.c high level communication with the vcu and the firmware
  * channel creation, frame encoding
  *
- * Copyright (C) 2016, Allegro DVT (www.allegrodvt.com)
+ * Copyright (C) 2019, Allegro DVT (www.allegrodvt.com)
  *
  * This program is free software; you can redistribute it and/or modify it
  * under the terms of the GNU General Public License version 2 as published by
