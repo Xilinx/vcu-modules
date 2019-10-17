@@ -1,8 +1,9 @@
 *.o
-*.o.cmd
 *.ko
-*.ko.cmd
-.tmp_versions
+*.symvers
+*.cmd
 *.order
-Module.symvers
-*/al*.mod.c
+.tmp_versions/
+*.mod.c
+unittests/bin/
+tags
