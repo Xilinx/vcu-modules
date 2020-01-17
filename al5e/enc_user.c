@@ -269,28 +269,41 @@ int al5e_user_put_stream_buffer(struct al5_user *user,
 				struct al5_buffer *buffer)
 {
 	int error;
-	struct al5_buffer_info buffer_info;
+	struct al5_buffer_info stream_buffer_info;
+	struct al5_buffer_info external_mv_buffer_info;
 	struct al5_mail *mail;
-	u32 mcu_vaddr;
+	u32 stream_mcu_vaddr;
+	u32 external_mv_mcu_vaddr = 0;
 
 	if (!al5_chan_is_created(user))
 		return -EPERM;
 
-	error = al5_get_dmabuf_info(user->device, buffer->handle, &buffer_info);
+	error = al5_get_dmabuf_info(user->device, buffer->stream_buffer.handle,
+				    &stream_buffer_info);
 	if (error)
 		return error;
 
-	if (buffer->size > buffer_info.size)
+	if (buffer->stream_buffer.size > stream_buffer_info.size)
 		return -EFAULT;
 
-	mail = al5_mail_create(AL_MCU_MSG_PUT_STREAM_BUFFER, 28);
+	if (buffer->external_mv_handle != 0) {
+		error = al5_get_dmabuf_info(user->device, buffer->external_mv_handle,
+					    &external_mv_buffer_info);
+		if (error)
+			return error;
+		external_mv_mcu_vaddr = al5_mcu_get_virtual_address(
+			external_mv_buffer_info.bus_address);
+	}
+
+	mail = al5_mail_create(AL_MCU_MSG_PUT_STREAM_BUFFER, 32);
 	al5_mail_write_word(mail, user->chan_uid);
-	al5_mail_write_word(mail, buffer_info.bus_address);
-	mcu_vaddr = al5_mcu_get_virtual_address(buffer_info.bus_address);
-	al5_mail_write_word(mail, mcu_vaddr);
-	al5_mail_write_word(mail, buffer->size);
-	al5_mail_write_word(mail, buffer->offset);
-	al5_mail_write(mail, &buffer->stream_buffer_ptr, 8);
+	al5_mail_write_word(mail, stream_buffer_info.bus_address);
+	stream_mcu_vaddr = al5_mcu_get_virtual_address(stream_buffer_info.bus_address);
+	al5_mail_write_word(mail, stream_mcu_vaddr);
+	al5_mail_write_word(mail, buffer->stream_buffer.size);
+	al5_mail_write_word(mail, buffer->stream_buffer.offset);
+	al5_mail_write(mail, &buffer->stream_buffer.stream_buffer_ptr, 8);
+	al5_mail_write_word(mail, external_mv_mcu_vaddr);
 
 	return al5_check_and_send(user, mail);
 }

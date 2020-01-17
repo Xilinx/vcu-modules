@@ -49,11 +49,11 @@ struct al5_dmabuf_attachment {
 /* device argument was removed */
 static int al5_dmabuf_attach(struct dma_buf *dbuf, struct dma_buf_attachment *dbuf_attach)
 #else
-static int al5_dmabuf_attach(struct dma_buf *dbuf, struct device* dev, struct dma_buf_attachment *dbuf_attach)
+static int al5_dmabuf_attach(struct dma_buf *dbuf, struct device *dev,
+			     struct dma_buf_attachment *dbuf_attach)
 #endif
 {
 	struct al5_dmabuf_priv *dinfo = dbuf->priv;
-
 	struct al5_dmabuf_attachment *attach;
 
 	struct scatterlist *rd, *wr;
