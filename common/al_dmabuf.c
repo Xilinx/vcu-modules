@@ -275,7 +275,7 @@ static struct dma_buf *al5_get_dmabuf(void *dma_info_priv)
 		return NULL;
 
 	dbuf = dma_buf_export(&exp_info);
-	if (IS_ERR(buf)) {
+	if (IS_ERR(dbuf)) {
 		pr_err("couldn't export dma buf\n");
 		return NULL;
 	}
