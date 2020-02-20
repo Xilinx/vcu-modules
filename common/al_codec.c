@@ -19,6 +19,7 @@
 
 #include <linux/delay.h>
 #include <linux/of_address.h>
+#include <linux/of_reserved_mem.h>
 #include <linux/of.h>
 
 #include "al_mail.h"
@@ -413,6 +414,17 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		dev_err(&pdev->dev, "Can't map registers");
 		err = PTR_ERR(codec->regs);
 		goto fail;
+	}
+	err = of_reserved_mem_device_init(&pdev->dev);
+	if (err) {
+		dev_err(&pdev->dev, "Failed to get shared dma pool with error : %d\n", err);
+	} else {
+		dev_dbg(&pdev->dev, "Using shared dma pool for allocation\n");
+		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+		if (err) {
+			dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
+			goto fail;
+		}
 	}
 
 	mem_node = of_parse_phandle(pdev->dev.of_node, "xlnx,dedicated-mem", 0);
