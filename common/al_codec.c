@@ -415,31 +415,22 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		err = PTR_ERR(codec->regs);
 		goto fail;
 	}
-	err = of_reserved_mem_device_init(&pdev->dev);
-	if (err) {
-		dev_err(&pdev->dev, "Failed to get shared dma pool with error : %d\n", err);
-	} else {
-		dev_dbg(&pdev->dev, "Using shared dma pool for allocation\n");
-		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
-		if (err) {
-			dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
-			goto fail;
-		}
-	}
 
-	mem_node = of_parse_phandle(pdev->dev.of_node, "xlnx,dedicated-mem", 0);
+	mem_node = of_parse_phandle(pdev->dev.of_node, "memory-region", 0);
 	if (mem_node) {
 		err = of_address_to_resource(mem_node, 0, &mem_res);
-		if (!err) {
-			err = dma_declare_coherent_memory(&pdev->dev,
-							  mem_res.start, mem_res.start,
-							  resource_size(&mem_res),
-							  DMA_MEMORY_EXCLUSIVE);
 
-			err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+		if (!err) {
+			err = of_reserved_mem_device_init(&pdev->dev);
 			if (err) {
-				dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
-				goto fail;
+				dev_err(&pdev->dev, "Failed to get shared dma pool with error : %d\n", err);
+			} else {
+				dev_dbg(&pdev->dev, "Using shared dma pool for allocation\n");
+				err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+				if (err) {
+					dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
+					goto fail;
+				}
 			}
 		}
 	}
@@ -484,7 +475,6 @@ free_mcu_caches:
 	al5_free_dma(codec->device, codec->icache);
 	codec->icache = NULL;
 fail:
-	dma_release_declared_memory(&pdev->dev);
 	return err;
 
 }
@@ -498,7 +488,6 @@ void al5_codec_tear_down(struct al5_codec_desc *codec)
 	al5_group_deinit(group);
 	al5_free_dma(codec->device, codec->suballoc_buf);
 	al5_free_dma(codec->device, codec->icache);
-	dma_release_declared_memory(codec->device);
 }
 EXPORT_SYMBOL_GPL(al5_codec_tear_down);
 
