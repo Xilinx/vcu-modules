@@ -431,6 +431,8 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 					dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
 					goto fail;
 				}
+
+		        add_memory(0, mem_res.start, resource_size(&mem_res));
 			}
 		}
 	}
