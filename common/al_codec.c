@@ -29,6 +29,9 @@
 #include "al_alloc.h"
 #include "mcu_interface.h"
 
+#ifdef CONFIG_MEMORY_HOTPLUG
+#define HOTPLUG_ALIGN 0x40000000
+#endif
 static void set_icache_offset(struct al5_codec_desc *codec)
 {
 	dma_addr_t dma_handle = codec->icache->dma_handle - MCU_CACHE_OFFSET;
@@ -389,6 +392,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	const char *device_name = dev_name(&pdev->dev);
 	struct mcu_mailbox_config config;
 	struct mcu_mailbox_interface *mcu;
+	unsigned long pgtable_padding;
 
 	codec->device = &pdev->dev;
 
@@ -432,7 +436,17 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 					goto fail;
 				}
 
-		        add_memory(0, mem_res.start, resource_size(&mem_res));
+#ifdef CONFIG_MEMORY_HOTPLUG
+			/* Hotplug requires 0x40000000 alignment so round to nearest multiple */
+			if (resource_size(&mem_res) % HOTPLUG_ALIGN)
+				pgtable_padding = HOTPLUG_ALIGN -
+					(resource_size(&mem_res) % HOTPLUG_ALIGN);
+			else
+				pgtable_padding = 0;
+
+			add_memory(0, mem_res.start, resource_size(&mem_res) +
+					   pgtable_padding);
+#endif
 			}
 		}
 	}
