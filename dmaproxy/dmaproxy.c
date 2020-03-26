@@ -209,7 +209,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	}
 	um->len = dmaproxy.size;
 
-	um->addr[0] = dma_map_page(dma_dev->dev, virt_to_page(dmaproxy_data->src_buf),
+	um->addr[0] = dma_map_page(dma_dev->dev, phys_to_page(dmaproxy_data->src_buf),
 				   offset_in_page(dmaproxy_data->src_buf), um->len, DMA_TO_DEVICE);
 	ret = dma_mapping_error(dma_dev->dev, um->addr[0]);
 	if (ret) {
@@ -218,7 +218,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	}
 	um->to_cnt++;
 
-	um->addr[1] = dma_map_page(dma_dev->dev, virt_to_page(dmaproxy_data->dst_buf),
+	um->addr[1] = dma_map_page(dma_dev->dev, phys_to_page(dmaproxy_data->dst_buf),
 				   offset_in_page(dmaproxy_data->dst_buf), um->len, DMA_BIDIRECTIONAL);
 	ret = dma_mapping_error(dma_dev->dev, um->addr[1]);
 	if (ret) {
