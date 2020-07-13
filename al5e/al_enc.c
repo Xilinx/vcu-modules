@@ -106,8 +106,7 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 		if (copy_from_user(&config_channel, (void *)arg,
 				   sizeof(config_channel)))
 			return -EFAULT;
-		ret = al5e_user_create_channel(user, &config_channel.param,
-					       &config_channel.status);
+		ret = al5e_user_create_channel(user, &config_channel);
 		if (copy_to_user((void *)arg, &config_channel,
 				 sizeof(config_channel)))
 			return -EFAULT;

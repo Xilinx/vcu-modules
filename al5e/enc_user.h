@@ -20,8 +20,7 @@
 #include "al_enc_ioctl.h"
 
 int al5e_user_create_channel(struct al5_user *user,
-			     struct al5_params *param,
-			     struct al5_channel_status *status);
+			     struct al5_config_channel *msg);
 int al5e_user_encode_one_frame(struct al5_user *user,
 			       struct al5_encode_msg *msg);
 int al5e_user_wait_for_status(struct al5_user *user,

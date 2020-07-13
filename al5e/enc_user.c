@@ -109,13 +109,31 @@ static int send_reference_buffers(struct al5_user *user)
 }
 
 static int try_to_create_channel(struct al5_user *user,
-				 struct al5_params *param,
-				 struct al5_channel_status *status,
+				 struct al5_config_channel *msg,
 				 struct al5e_feedback_channel *fb_message)
 {
+	struct al5_params *param = &msg->param;
+	struct al5_channel_status *status = &msg->status;
 	struct al5_mail *feedback;
-	int err =  al5_check_and_send(user, al5e_create_channel_param_msg(user->uid,
-									  param));
+	int err;
+
+	struct al5_buffer_info rc_plugin_info;
+	u32 mcu_rc_plugin_addr = 0;
+	u32 mcu_rc_plugin_size = 0;
+
+	if (msg->rc_plugin_fd != -1) {
+		err = al5_get_dmabuf_info(user->device, msg->rc_plugin_fd,
+					    &rc_plugin_info);
+		if (err)
+			return err;
+		mcu_rc_plugin_addr = al5_mcu_get_virtual_address(rc_plugin_info.bus_address);
+		mcu_rc_plugin_size = rc_plugin_info.size;
+	}
+
+	err =  al5_check_and_send(user, al5e_create_channel_param_msg(user->uid,
+									  param,
+									  mcu_rc_plugin_addr,
+									  mcu_rc_plugin_size));
 
 	if (err)
 		return err;
@@ -145,16 +163,13 @@ static int channel_is_fully_created(struct al5_user *user)
 	return al5_chan_is_created(user) && !al5_have_checkpoint(user);
 }
 
-int al5e_user_create_channel(struct al5_user *user,
-			     struct al5_params *param,
-			     struct al5_channel_status *status)
+int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *msg)
 {
 	struct al5e_feedback_channel fb_message = { 0 };
 	int err = mutex_lock_killable(&user->locks[AL5_USER_CREATE]);
 
 	if (err == -EINTR)
 		return err;
-
 
 	if (channel_is_fully_created(user)) {
 		err = -EPERM;
@@ -163,7 +178,7 @@ int al5e_user_create_channel(struct al5_user *user,
 	}
 
 	if (!al5_have_checkpoint(user)) {
-		err = try_to_create_channel(user, param, status, &fb_message);
+		err = try_to_create_channel(user, msg, &fb_message);
 		if (err) {
 			dev_warn_ratelimited(user->device, "Failed on create channel");
 			goto fail;

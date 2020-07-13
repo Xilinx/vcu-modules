@@ -46,9 +46,20 @@ struct al5_mail *al5e_create_encode_one_frame_msg(u32 chan_uid,
 }
 
 struct al5_mail *al5e_create_channel_param_msg(u32 user_uid,
-					       struct al5_params *msg)
+					       struct al5_params *msg,
+					       u32 mcu_rc_plugin_addr,
+					       u32 mcu_rc_plugin_size)
 {
-	return al5_create_classic_mail(user_uid, AL_MCU_MSG_CREATE_CHANNEL,
-				       msg->opaque_params, msg->size);
+	/* One word for the user uid and two words for the rc plugin */
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_CREATE_CHANNEL, msg->size + 3 * sizeof(u32));
+	if(!mail)
+		return NULL;
+
+	al5_mail_write_word(mail, user_uid);
+	al5_mail_write(mail, msg->opaque_params, msg->size);
+	al5_mail_write_word(mail, mcu_rc_plugin_addr);
+	al5_mail_write_word(mail, mcu_rc_plugin_size);
+
+	return mail;
 }
 
