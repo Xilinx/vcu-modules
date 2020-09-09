@@ -40,7 +40,7 @@ struct al5_dma_buffer *al5_alloc_dma(struct device *dev, size_t size)
 	buf->size = size;
 	buf->cpu_handle = dma_alloc_coherent(dev, buf->size,
 					     &buf->dma_handle,
-					     GFP_KERNEL | GFP_DMA);
+					     GFP_KERNEL | GFP_DMA | __GFP_NOWARN);
 
 	if (!buf->cpu_handle) {
 		kfree(buf);
