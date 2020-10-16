@@ -145,7 +145,7 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 	struct al5_mail *mail;
 
 	// If the channel has been created in the MCU
-	if (user->chan_uid == BAD_CHAN)
+	if (user->checkpoint != NO_CHECKPOINT)
 		return -EPERM;
 
 	user_queues_unlock(user);
