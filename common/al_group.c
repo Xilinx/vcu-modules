@@ -22,6 +22,7 @@
 #include "al_group.h"
 #include "al_mail.h"
 #include "al_codec_mails.h"
+#include "al_constants.h"
 
 void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu,
 		    int max_users_nb, struct device *device)
@@ -237,7 +238,10 @@ void read_mail(struct al5_group *group)
 	handle_mail(group, mail);
 }
 
-#define MAX_MAILBOX_MSG 100
+/* A message contains at least a header (2 u16).
+   We compute the upper bound of the message number
+   to check if the mailbox is broken and stop looping if it is */
+#define MAX_MAILBOX_MSG (MAILBOX_SIZE / 4)
 void al5_group_read_mails(struct al5_group *group)
 {
 	unsigned nb_msg = 0;
