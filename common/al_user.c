@@ -144,7 +144,8 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 	int i, j;
 	struct al5_mail *mail;
 
-	if (!al5_chan_is_created(user))
+	// If the channel has been created in the MCU
+	if (user->chan_uid == BAD_CHAN)
 		return -EPERM;
 
 	user_queues_unlock(user);
@@ -194,15 +195,9 @@ EXPORT_SYMBOL_GPL(al5_user_destroy_channel);
 
 int al5_chan_is_created(struct al5_user *user)
 {
-	return user->chan_uid != BAD_CHAN;
+	return user->checkpoint == CHECKPOINT_CREATED;
 }
 EXPORT_SYMBOL_GPL(al5_chan_is_created);
-
-int al5_have_checkpoint(struct al5_user *user)
-{
-	return user->checkpoint != NO_CHECKPOINT;
-}
-EXPORT_SYMBOL_GPL(al5_have_checkpoint);
 
 struct al5_mail *al5_user_get_mail(struct al5_user *user, u32 mail_uid)
 {

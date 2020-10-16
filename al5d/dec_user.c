@@ -34,11 +34,8 @@ static void update_chan_param(struct al5_channel_status *status,
 
 static int init_chan(struct al5_user *user, struct al5_mail *mail)
 {
-	int err;
-
 	user->chan_uid = al5_mail_get_chan_uid(mail);
-	err = !al5_chan_is_created(user);
-	if (err) {
+	if (user->chan_uid == BAD_CHAN) {
 		dev_err(user->device,
 			"VCU: unavailable resources or wrong configuration");
 		return -EINVAL;
@@ -81,6 +78,7 @@ int al5d_user_create_channel(struct al5_user *user,
 	if (err)
 		goto unlock;
 
+	user->checkpoint = CHECKPOINT_CREATED;
 	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return 0;
 

@@ -52,6 +52,10 @@ enum user_operations {
 };
 
 #define NO_CHECKPOINT -1
+#define CHECKPOINT_ALLOCATE_BUFFERS 1
+#define CHECKPOINT_SEND_INTERMEDIATE_BUFFERS 2
+#define CHECKPOINT_SEND_REFERENCE_BUFFERS 3
+#define CHECKPOINT_CREATED 4
 #define BAD_CHAN 0xff
 
 /* User structure

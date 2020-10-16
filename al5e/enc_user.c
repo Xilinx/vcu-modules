@@ -26,10 +26,6 @@
 #include "al_dmabuf.h"
 #include "al_buffers_pool.h"
 
-#define CHECKPOINT_ALLOCATE_BUFFERS 1
-#define CHECKPOINT_SEND_INTERMEDIATE_BUFFERS 2
-#define CHECKPOINT_SEND_REFERENCE_BUFFERS 3
-
 static void update_chan_param(struct al5_channel_status *status,
 			      struct al5e_feedback_channel *message)
 {
@@ -158,11 +154,6 @@ static int try_to_create_channel(struct al5_user *user,
 	return 0;
 }
 
-static int channel_is_fully_created(struct al5_user *user)
-{
-	return al5_chan_is_created(user) && !al5_have_checkpoint(user);
-}
-
 int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *msg)
 {
 	struct al5e_feedback_channel fb_message = { 0 };
@@ -171,13 +162,13 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 	if (err == -EINTR)
 		return err;
 
-	if (channel_is_fully_created(user)) {
+	if (al5_chan_is_created(user)) {
 		err = -EPERM;
 		dev_err(user->device, "Channel already created!");
 		goto fail;
 	}
 
-	if (!al5_have_checkpoint(user)) {
+	if (user->checkpoint == NO_CHECKPOINT) {
 		err = try_to_create_channel(user, msg, &fb_message);
 		if (err) {
 			dev_warn_ratelimited(user->device, "Failed on create channel");
@@ -213,7 +204,7 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 					     "Failed to send reference buffers, channel wasn't created");
 			goto fail;
 		}
-		user->checkpoint = NO_CHECKPOINT;
+		user->checkpoint = CHECKPOINT_CREATED;
 	}
 
 	goto unlock;
