@@ -32,13 +32,9 @@ static void update_chan_param(struct al5_channel_status *status,
 	status->error_code = message->error_code;
 }
 
-static int check_and_affect_chan_uid(struct al5_user *user, u32 chan_uid)
+static int chan_is_valid(u32 chan_uid)
 {
-	if (chan_uid == BAD_CHAN)
-		return -EINVAL;
-
-	user->chan_uid = chan_uid;
-	return 0;
+	return chan_uid == BAD_CHAN ? -EINVAL : 0;
 }
 
 static struct al5_mail *create_mail_from_bufpool(u32 msg_uid, u32 chan_uid,
@@ -144,7 +140,7 @@ static int try_to_create_channel(struct al5_user *user,
 	al5_free_mail(feedback);
 	update_chan_param(status, fb_message);
 
-	err = check_and_affect_chan_uid(user, fb_message->chan_uid);
+	err = chan_is_valid(fb_message->chan_uid);
 	if (err) {
 		dev_err(user->device,
 			"VCU: unavailable resources or wrong configuration");
@@ -274,29 +270,35 @@ unlock:
 int al5e_user_put_stream_buffer(struct al5_user *user,
 				struct al5_buffer *buffer)
 {
-	int error;
+	int err = -EINVAL;
 	struct al5_buffer_info stream_buffer_info;
 	struct al5_buffer_info external_mv_buffer_info;
 	struct al5_mail *mail;
 	u32 stream_mcu_vaddr;
 	u32 external_mv_mcu_vaddr = 0;
 
-	if (!al5_chan_is_created(user))
-		return -EPERM;
+	int err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 
-	error = al5_get_dmabuf_info(user->device, buffer->stream_buffer.handle,
-				    &stream_buffer_info);
-	if (error)
-		return error;
+	if (!al5_chan_is_created(user)) {
+		err = -EPERM;
+		goto unlock;
+	}
 
-	if (buffer->stream_buffer.size > stream_buffer_info.size)
-		return -EFAULT;
+	err = al5_get_dmabuf_info(user->device, buffer->stream_buffer.handle,
+				  &stream_buffer_info);
+	if (err)
+		goto unlock;
+
+	if (buffer->stream_buffer.size > stream_buffer_info.size) {
+		err = -EFAULT;
+		goto unlock;
+	}
 
 	if (buffer->external_mv_handle != 0) {
-		error = al5_get_dmabuf_info(user->device, buffer->external_mv_handle,
-					    &external_mv_buffer_info);
-		if (error)
-			return error;
+		err = al5_get_dmabuf_info(user->device, buffer->external_mv_handle,
+					  &external_mv_buffer_info);
+		if (err)
+			goto unlock;
 		external_mv_mcu_vaddr = al5_mcu_get_virtual_address(
 			external_mv_buffer_info.bus_address);
 	}
@@ -311,7 +313,11 @@ int al5e_user_put_stream_buffer(struct al5_user *user,
 	al5_mail_write(mail, &buffer->stream_buffer.stream_buffer_ptr, 8);
 	al5_mail_write_word(mail, external_mv_mcu_vaddr);
 
-	return al5_check_and_send(user, mail);
+	err = al5_check_and_send(user, mail);
+
+unlock:
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
+	return err;
 }
 
 static int get_user_rec_buffer(struct al5_user *user, int id)

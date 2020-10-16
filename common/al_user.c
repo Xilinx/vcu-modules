@@ -179,7 +179,7 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 
 		al5_free_mail(mail);
 	}
-	user->chan_uid = BAD_CHAN;
+
 	user->checkpoint = NO_CHECKPOINT;
 	al5_user_destroy_channel_resources(user);
 

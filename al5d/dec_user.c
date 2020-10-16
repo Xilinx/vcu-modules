@@ -32,15 +32,20 @@ static void update_chan_param(struct al5_channel_status *status,
 	memcpy(&status->error_code, mail->body + 8, 4);
 }
 
-static int init_chan(struct al5_user *user, struct al5_mail *mail)
+static int chan_is_valid(u32 chan_uid)
 {
-	user->chan_uid = al5_mail_get_chan_uid(mail);
-	if (user->chan_uid == BAD_CHAN) {
+	return chan_uid == BAD_CHAN ? -EINVAL : 0;
+}
+
+static int check_chan_id(struct al5_user *user, struct al5_mail *mail)
+{
+	u32 chan_uid = al5_mail_get_chan_uid(mail);
+
+	if (chan_is_valid(chan_uid)) {
 		dev_err(user->device,
 			"VCU: unavailable resources or wrong configuration");
 		return -EINVAL;
 	}
-
 	return 0;
 }
 
@@ -73,7 +78,7 @@ int al5d_user_create_channel(struct al5_user *user,
 
 	update_chan_param(&msg->status, feedback);
 
-	err = init_chan(user, feedback);
+	err = check_chan_id(user, feedback);
 	al5_free_mail(feedback);
 	if (err)
 		goto unlock;
