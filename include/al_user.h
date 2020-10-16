@@ -43,13 +43,9 @@ enum user_mail {
 
 enum user_operations {
 	AL5_USER_INIT,
-	AL5_USER_CREATE,
-	AL5_USER_DESTROY,
-	AL5_USER_XCODE,
+	AL5_USER_CHANNEL,
 	AL5_USER_STATUS,
 	AL5_USER_SC,
-	AL5_USER_DEBUG,
-	AL5_USER_REC,
 
 	/* always the last one */
 	AL5_USER_OPS_NUMBER

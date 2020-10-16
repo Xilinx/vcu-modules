@@ -166,7 +166,7 @@ static int channel_is_fully_created(struct al5_user *user)
 int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *msg)
 {
 	struct al5e_feedback_channel fb_message = { 0 };
-	int err = mutex_lock_killable(&user->locks[AL5_USER_CREATE]);
+	int err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 
 	if (err == -EINTR)
 		return err;
@@ -220,12 +220,12 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 
 fail_allocate:
 	user->checkpoint = NO_CHECKPOINT;
-	mutex_unlock(&user->locks[AL5_USER_CREATE]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	al5_user_destroy_channel(user, 0);
 	return err;
 fail:
 unlock:
-	mutex_unlock(&user->locks[AL5_USER_CREATE]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return err;
 }
 EXPORT_SYMBOL_GPL(al5e_user_create_channel);
@@ -233,7 +233,7 @@ EXPORT_SYMBOL_GPL(al5e_user_create_channel);
 int al5e_user_encode_one_frame(struct al5_user *user,
 			       struct al5_encode_msg *msg)
 {
-	int err = mutex_lock_killable(&user->locks[AL5_USER_XCODE]);
+	int err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 
 	if (err == -EINTR)
 		return err;
@@ -249,7 +249,7 @@ int al5e_user_encode_one_frame(struct al5_user *user,
 								  msg));
 
 unlock:
-	mutex_unlock(&user->locks[AL5_USER_XCODE]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return err;
 }
 EXPORT_SYMBOL_GPL(al5e_user_encode_one_frame);
@@ -336,7 +336,7 @@ int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)
 	struct al5_mail *feedback;
 	struct al5_mail *mail;
 
-	if (!mutex_trylock(&user->locks[AL5_USER_REC]))
+	if (!mutex_trylock(&user->locks[AL5_USER_CHANNEL]))
 		return -EINTR;
 
 	if (!al5_chan_is_created(user)) {
@@ -375,7 +375,7 @@ int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)
 no_rec_buf:
 	al5_free_mail(feedback);
 unlock:
-	mutex_unlock(&user->locks[AL5_USER_REC]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return err;
 }
 
@@ -386,7 +386,7 @@ int al5e_user_release_rec(struct al5_user *user, u32 fd)
 	struct al5_mail *mail;
 	int err = 0;
 
-	if (!mutex_trylock(&user->locks[AL5_USER_REC]))
+	if (!mutex_trylock(&user->locks[AL5_USER_CHANNEL]))
 		return -EINTR;
 
 	if (!al5_chan_is_created(user)) {
@@ -406,7 +406,7 @@ int al5e_user_release_rec(struct al5_user *user, u32 fd)
 
 	err = al5_check_and_send(user, mail);
 unlock:
-	mutex_unlock(&user->locks[AL5_USER_REC]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return err;
 }
 

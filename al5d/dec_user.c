@@ -53,7 +53,7 @@ int al5d_user_create_channel(struct al5_user *user,
 	struct al5_mail *feedback;
 	int err = -EINVAL;
 
-	err = mutex_lock_killable(&user->locks[AL5_USER_CREATE]);
+	err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 	if (err == -EINTR)
 		return err;
 
@@ -81,12 +81,12 @@ int al5d_user_create_channel(struct al5_user *user,
 	if (err)
 		goto unlock;
 
-	mutex_unlock(&user->locks[AL5_USER_CREATE]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return 0;
 
 unlock:
 	dev_err(user->device, "Channel wasn't created.");
-	mutex_unlock(&user->locks[AL5_USER_CREATE]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return err;
 }
 EXPORT_SYMBOL_GPL(al5d_user_create_channel);
@@ -96,7 +96,7 @@ int al5d_user_decode_one_slice(struct al5_user *user,
 {
 	int err;
 
-	err = mutex_lock_killable(&user->locks[AL5_USER_XCODE]);
+	err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 	if (err == -EINTR)
 		return err;
 
@@ -112,7 +112,7 @@ int al5d_user_decode_one_slice(struct al5_user *user,
 								  msg));
 
 unlock:
-	mutex_unlock(&user->locks[AL5_USER_XCODE]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return err;
 }
 
@@ -121,7 +121,7 @@ int al5d_user_decode_one_frame(struct al5_user *user,
 {
 	int err;
 
-	err = mutex_lock_killable(&user->locks[AL5_USER_XCODE]);
+	err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 	if (err == -EINTR)
 		return err;
 
@@ -137,7 +137,7 @@ int al5d_user_decode_one_frame(struct al5_user *user,
 								  msg));
 
 unlock:
-	mutex_unlock(&user->locks[AL5_USER_XCODE]);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
 	return err;
 
 }
