@@ -66,7 +66,12 @@ enum user_operations {
  */
 
 struct al5_user {
+	/* the user id is used to identify the mail that are exchanged between the user
+	   and the mcu before the creation of a channel */
 	int uid;
+	/* The chan_uid is used to identify the channel that should receive the mails
+	   in the mcu and in the driver. In the driver it is used to select which user
+	   should receive the current mail. */
 	int chan_uid;
 
 	int checkpoint;
