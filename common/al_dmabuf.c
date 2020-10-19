@@ -37,7 +37,6 @@ struct al5_dmabuf_priv {
 	struct device *dev;
 	struct sg_table *sgt_base;
 	enum dma_data_direction dma_dir;
-
 };
 
 struct al5_dmabuf_attachment {

@@ -270,7 +270,6 @@ unlock:
 int al5e_user_put_stream_buffer(struct al5_user *user,
 				struct al5_buffer *buffer)
 {
-	int err = -EINVAL;
 	struct al5_buffer_info stream_buffer_info;
 	struct al5_buffer_info external_mv_buffer_info;
 	struct al5_mail *mail;
