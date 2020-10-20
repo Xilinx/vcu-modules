@@ -324,7 +324,7 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 		}
 		if (ret != 0)
 			dev_err(codec->device,
-				"Failed to destroy channel on mcu. Something went wrong");
+				"Failed to destroy channel on mcu. Something went wrong (%d)", ret);
 
 		/* best effort. If everything went wrong, still free the channel resources
 		 * to avoid leaks */
