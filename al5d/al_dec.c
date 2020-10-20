@@ -207,6 +207,7 @@ static const struct file_operations al5d_fops = {
 static int al5d_setup_codec_cdev(struct al5_codec_desc *codec, int minor)
 {
 	struct device *device;
+	const char *device_name = "allegroDecodeIP";
 	dev_t dev = MKDEV(al5d_codec_major, minor);
 
 	int err = al5_setup_codec_cdev(codec, &al5d_fops, THIS_MODULE,
@@ -216,8 +217,9 @@ static int al5d_setup_codec_cdev(struct al5_codec_desc *codec, int minor)
 	if (err)
 		return err;
 
-	device = device_create(module_class, NULL, dev, NULL,
-			       "allegroDecodeIP");
+	of_property_read_string(codec->device->of_node, "al,devicename", &device_name);
+
+	device = device_create(module_class, NULL, dev, NULL, device_name);
 	if (IS_ERR(device)) {
 		pr_err("device not created\n");
 		al5_clean_up_codec_cdev(codec);
