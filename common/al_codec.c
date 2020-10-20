@@ -381,7 +381,6 @@ release_firmware:
 }
 EXPORT_SYMBOL_GPL(al5_codec_set_firmware);
 
-
 int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		     size_t max_users_nb)
 {
@@ -433,7 +432,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 				err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
 				if (err) {
 					dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
-					goto fail;
+					goto fail_mem;
 				}
 
 #ifdef CONFIG_MEMORY_HOTPLUG
@@ -461,7 +460,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 				       codec->regs + AL5_MCU_INTERRUPT);
 	if (err) {
 		dev_err(&pdev->dev, "Can't create interface with mcu");
-		goto fail;
+		goto fail_mem;
 	}
 
 	al5_group_init(&codec->users_group, mcu, max_users_nb, codec->device);
@@ -469,7 +468,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	err = alloc_mcu_caches(codec);
 	if (err) {
 		dev_err(&pdev->dev, "icache failed to be allocated");
-		goto fail;
+		goto fail_mem;
 	}
 
 	err = devm_request_threaded_irq(codec->device,
@@ -490,6 +489,8 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 free_mcu_caches:
 	al5_free_dma(codec->device, codec->icache);
 	codec->icache = NULL;
+fail_mem:
+	of_reserved_mem_device_release(codec->device);
 fail:
 	return err;
 
@@ -504,6 +505,7 @@ void al5_codec_tear_down(struct al5_codec_desc *codec)
 	al5_group_deinit(group);
 	al5_free_dma(codec->device, codec->suballoc_buf);
 	al5_free_dma(codec->device, codec->icache);
+	of_reserved_mem_device_release(codec->device);
 }
 EXPORT_SYMBOL_GPL(al5_codec_tear_down);
 
