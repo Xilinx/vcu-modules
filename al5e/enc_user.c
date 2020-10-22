@@ -197,11 +197,13 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 		err = send_reference_buffers(user);
 		if (err) {
 			dev_warn_ratelimited(user->device,
-					     "Failed to send reference buffers, channel wasn't created");
+					     "Failed to send reference buffers, channel (%d, %d) isn't fully created yet", user->uid, user->chan_uid);
 			goto fail;
 		}
 		user->checkpoint = CHECKPOINT_CREATED;
 	}
+
+	dev_dbg(user->device, "Created channel (%d, %d)", user->uid, user->chan_uid);
 
 	goto unlock;
 
