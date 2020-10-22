@@ -36,6 +36,7 @@ struct al5_queue {
 };
 
 void al5_queue_init(struct al5_queue *q);
+struct al5_mail *al5_queue_pop_no_wait(struct al5_queue *q);
 struct al5_mail *al5_queue_pop(struct al5_queue *q);
 int al5_queue_pop_timeout(struct al5_mail **mail, struct al5_queue *q);
 int al5_queue_push(struct al5_queue *q, struct al5_mail *mail);

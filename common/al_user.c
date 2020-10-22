@@ -180,7 +180,7 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 		al5_free_mail(mail);
 	}
 
-	user->checkpoint = NO_CHECKPOINT;
+	user->checkpoint = CHECKPOINT_DESTROYED;
 	al5_user_destroy_channel_resources(user);
 
 unlock_mutexes:

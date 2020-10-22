@@ -278,6 +278,42 @@ unlock:
 	return err;
 }
 
+unsigned int al5_codec_poll(struct file *filp, poll_table *wait)
+{
+	struct al5_filp_data *private_data = filp->private_data;
+	struct al5_user *user = private_data->user;
+	unsigned int mask = 0;
+	int err;
+
+	struct al5_queue *status = &user->queues[AL5_USER_MAIL_STATUS];
+	struct al5_queue *sc = &user->queues[AL5_USER_MAIL_SC];
+
+	poll_wait(filp, &status->queue, wait);
+	poll_wait(filp, &sc->queue, wait);
+
+	err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
+	if (err == -EINTR)
+		return err;
+
+	if (user->checkpoint == CHECKPOINT_DESTROYED)
+		mask = POLLHUP;
+
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
+
+	spin_lock(&status->lock);
+	if (!al5_list_empty(status->list))
+		mask |= POLLIN;
+	spin_unlock(&status->lock);
+
+	spin_lock(&sc->lock);
+	if (!al5_list_empty(sc->list))
+		mask |= POLLIN;
+	spin_unlock(&sc->lock);
+
+	return mask;
+}
+EXPORT_SYMBOL_GPL(al5_codec_poll);
+
 int al5_codec_open(struct inode *inode, struct file *filp)
 {
 	struct al5_filp_data *private_data = kzalloc(sizeof(*private_data),
@@ -290,6 +326,7 @@ int al5_codec_open(struct inode *inode, struct file *filp)
 	if (!user)
 		return -ENOMEM;
 	codec = container_of(inode->i_cdev, struct al5_codec_desc, cdev);
+	user->non_block = filp->f_flags & O_NONBLOCK;
 
 	err = al5_group_bind_user(&codec->users_group, user);
 	if (err) {

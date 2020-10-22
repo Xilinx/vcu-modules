@@ -167,11 +167,20 @@ int al5d_user_wait_for_status(struct al5_user *user, struct al5_params *msg)
 		goto unlock;
 	}
 
-	feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_STATUS]);
-	if (feedback)
-		al5d_mail_get_status(msg, feedback);
-	else
-		err = -EINTR;
+	if (user->non_block) {
+		feedback = al5_queue_pop_no_wait(&user->queues[AL5_USER_MAIL_STATUS]);
+		if (feedback)
+			al5d_mail_get_status(msg, feedback);
+		else
+			err = -EWOULDBLOCK;
+	}else  {
+		feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_STATUS]);
+		if (feedback)
+			al5d_mail_get_status(msg, feedback);
+		else
+			err = -EINTR;
+	}
+
 	al5_free_mail(feedback);
 
 unlock:
@@ -188,12 +197,20 @@ int al5d_user_wait_for_start_code(struct al5_user *user,
 	if (!mutex_trylock(&user->locks[AL5_USER_SC]))
 		return -EINTR;
 
-	feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_SC]);
-	if (feedback)
-		al5d_mail_get_sc_status(msg, feedback);
-	else
-		/* User has been unblocked */
-		err = -EINTR;
+	if (user->non_block) {
+		feedback = al5_queue_pop_no_wait(&user->queues[AL5_USER_MAIL_SC]);
+		if (feedback)
+			al5d_mail_get_sc_status(msg, feedback);
+		else
+			err = -EWOULDBLOCK;
+	}else  {
+		feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_SC]);
+		if (feedback)
+			al5d_mail_get_sc_status(msg, feedback);
+		else
+			err = -EINTR;
+	}
+
 	al5_free_mail(feedback);
 
 	mutex_unlock(&user->locks[AL5_USER_SC]);

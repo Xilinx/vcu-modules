@@ -56,6 +56,7 @@ enum user_operations {
 #define CHECKPOINT_SEND_INTERMEDIATE_BUFFERS 2
 #define CHECKPOINT_SEND_REFERENCE_BUFFERS 3
 #define CHECKPOINT_CREATED 4
+#define CHECKPOINT_DESTROYED 5
 #define BAD_CHAN 0xff
 
 /* User structure
@@ -84,6 +85,8 @@ struct al5_user {
 	struct device *device;
 	struct al5_buffers_pool int_buffers;
 	struct al5_buffers_pool rec_buffers;
+
+	bool non_block;
 };
 
 void al5_user_init(struct al5_user *user, int uid,

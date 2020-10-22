@@ -160,14 +160,19 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 
 	if (al5_chan_is_created(user)) {
 		err = -EPERM;
-		dev_err(user->device, "Channel already created (%d, %d)", user->uid, user->chan_uid);
+		dev_err(user->device, "Channel already created (%d, %d)", user->uid,
+			user->chan_uid);
 		goto fail;
 	}
+
+	if (user->checkpoint == CHECKPOINT_DESTROYED)
+		user->checkpoint = NO_CHECKPOINT;
 
 	if (user->checkpoint == NO_CHECKPOINT) {
 		err = try_to_create_channel(user, msg, &fb_message);
 		if (err) {
-			dev_warn_ratelimited(user->device, "Failed on create channel (%d)", user->uid);
+			dev_warn_ratelimited(user->device,
+					     "Failed on create channel (%d)", user->uid);
 			goto fail;
 		}
 		user->checkpoint = CHECKPOINT_ALLOCATE_BUFFERS;
@@ -253,15 +258,27 @@ int al5e_user_wait_for_status(struct al5_user *user,
 		return -EINTR;
 
 	if (!al5_chan_is_created(user)) {
+		dev_err(user->device,
+			"Cannot get a frame status if the channel isn't configured (%d, %d)", user->uid,
+			user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}
 
-	feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_STATUS]);
-	if (feedback)
-		al5e_mail_get_status(msg, feedback);
-	else
-		err = -EINTR;
+	if (user->non_block) {
+		feedback = al5_queue_pop_no_wait(&user->queues[AL5_USER_MAIL_STATUS]);
+		if (feedback)
+			al5e_mail_get_status(msg, feedback);
+		else
+			err = -EWOULDBLOCK;
+	}else {
+		feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_STATUS]);
+		if (feedback)
+			al5e_mail_get_status(msg, feedback);
+		else
+			err = -EINTR;
+	}
+
 	al5_free_mail(feedback);
 
 unlock:

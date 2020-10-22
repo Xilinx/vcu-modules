@@ -187,6 +187,7 @@ static const struct file_operations al5e_fops = {
 	.release	= al5_codec_release,
 	.unlocked_ioctl = al5e_ioctl,
 	.compat_ioctl	= al5_codec_compat_ioctl,
+	.poll		= al5_codec_poll,
 };
 
 static int al5e_setup_codec_cdev(struct al5_codec_desc *codec, int minor)

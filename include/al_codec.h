@@ -27,6 +27,7 @@
 #include <linux/firmware.h>
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
+#include <linux/poll.h>
 
 #include "al_group.h"
 #include "mcu_interface.h"
@@ -86,4 +87,7 @@ int al5_codec_release(struct inode *inode, struct file *filp);
 
 long al5_codec_compat_ioctl(struct file *file, unsigned int cmd,
 			    unsigned long arg);
+
+unsigned int al5_codec_poll(struct file *filp, poll_table *wait);
+
 #endif /* _AL_CODEC_H_ */
