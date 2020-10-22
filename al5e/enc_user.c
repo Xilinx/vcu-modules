@@ -160,14 +160,14 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 
 	if (al5_chan_is_created(user)) {
 		err = -EPERM;
-		dev_err(user->device, "Channel already created!");
+		dev_err(user->device, "Channel already created (%d, %d)", user->uid, user->chan_uid);
 		goto fail;
 	}
 
 	if (user->checkpoint == NO_CHECKPOINT) {
 		err = try_to_create_channel(user, msg, &fb_message);
 		if (err) {
-			dev_warn_ratelimited(user->device, "Failed on create channel");
+			dev_warn_ratelimited(user->device, "Failed on create channel (%d)", user->uid);
 			goto fail;
 		}
 		user->checkpoint = CHECKPOINT_ALLOCATE_BUFFERS;
@@ -177,7 +177,7 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 		err = allocate_channel_buffers(user, fb_message.buffers_needed);
 		if (err) {
 			dev_warn_ratelimited(user->device,
-					     "Failed internal buffers allocation, channel wasn't created");
+					     "Failed internal buffers allocation, channel (%d, %d) isn't fully created yet", user->uid, user->chan_uid);
 			goto fail_allocate;
 		}
 		user->checkpoint = CHECKPOINT_SEND_INTERMEDIATE_BUFFERS;
@@ -187,7 +187,7 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 		err = send_intermediate_buffers(user);
 		if (err) {
 			dev_warn_ratelimited(user->device,
-					     "Failed to send intermediate buffers, channel wasn't created");
+					     "Failed to send intermediate buffers, channel (%d, %d) isn't fully created yet", user->uid, user->chan_uid);
 			goto fail;
 		}
 		user->checkpoint = CHECKPOINT_SEND_REFERENCE_BUFFERS;
@@ -226,7 +226,7 @@ int al5e_user_encode_one_frame(struct al5_user *user,
 		return err;
 
 	if (!al5_chan_is_created(user)) {
-		dev_err(user->device, "Cannot encode frame until channel is configured");
+		dev_err(user->device, "Cannot encode frame until channel is configured (%d, %d)", user->uid, user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}
@@ -279,6 +279,7 @@ int al5e_user_put_stream_buffer(struct al5_user *user,
 	int err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 
 	if (!al5_chan_is_created(user)) {
+		dev_err(user->device, "Cannot put a stream buffer if the channel isn't configured (%d, %d)", user->uid, user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}
@@ -336,6 +337,7 @@ int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)
 		return -EINTR;
 
 	if (!al5_chan_is_created(user)) {
+		dev_err(user->device, "Cannot get a reconstructed buffer if the channel isn't configured (%d, %d)", user->uid, user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}
@@ -386,6 +388,7 @@ int al5e_user_release_rec(struct al5_user *user, u32 fd)
 		return -EINTR;
 
 	if (!al5_chan_is_created(user)) {
+		dev_err(user->device, "Cannot release a reconstructed buffer if the channel isn't configured (%d, %d)", user->uid, user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}
