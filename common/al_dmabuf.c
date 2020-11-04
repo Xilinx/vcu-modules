@@ -220,7 +220,7 @@ static const struct dma_buf_ops al5_dmabuf_ops = {
 };
 
 static void define_export_info(struct dma_buf_export_info *exp_info,
-			       int size,
+			       size_t size,
 			       void *priv)
 {
 	exp_info->owner = THIS_MODULE;
@@ -282,7 +282,7 @@ static struct dma_buf *al5_get_dmabuf(void *dma_info_priv)
 	return dbuf;
 }
 
-void *al5_dmabuf_wrap(struct device *dev, unsigned long size,
+void *al5_dmabuf_wrap(struct device *dev, size_t size,
 		      struct al5_dma_buffer *buffer)
 {
 	struct al5_dmabuf_priv *dinfo;
@@ -305,7 +305,7 @@ void *al5_dmabuf_wrap(struct device *dev, unsigned long size,
 }
 EXPORT_SYMBOL_GPL(al5_dmabuf_wrap);
 
-int al5_create_dmabuf_fd(struct device *dev, unsigned long size,
+int al5_create_dmabuf_fd(struct device *dev, size_t size,
 			 struct al5_dma_buffer *buffer)
 {
 	struct dma_buf *dbuf = al5_dmabuf_wrap(dev, size, buffer);
@@ -316,13 +316,13 @@ int al5_create_dmabuf_fd(struct device *dev, unsigned long size,
 }
 EXPORT_SYMBOL_GPL(al5_create_dmabuf_fd);
 
-int al5_allocate_dmabuf(struct device *dev, int size, u32 *fd)
+int al5_allocate_dmabuf(struct device *dev, size_t size, u32 *fd)
 {
 	struct al5_dma_buffer *buffer;
 
 	buffer = al5_alloc_dma(dev, size);
 	if (!buffer) {
-		dev_err(dev, "Can't alloc DMA buffer of size %d", size);
+		dev_err(dev, "Can't alloc DMA buffer of size %ld", size);
 		return -ENOMEM;
 	}
 
