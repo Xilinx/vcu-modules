@@ -23,10 +23,10 @@
 #include "al_ioctl.h"
 
 struct al5_dma_buffer {
-	u32 size;
+	size_t size;
 	dma_addr_t dma_handle;
 	void *cpu_handle;
-	u32 offset; /* internal */
+	size_t offset; /* internal */
 };
 
 struct al5_dma_buffer *al5_alloc_dma(struct device *dev, size_t size);
