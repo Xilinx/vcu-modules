@@ -258,7 +258,7 @@ int al5e_user_wait_for_status(struct al5_user *user,
 		return -EINTR;
 
 	if (!al5_chan_is_created(user)) {
-		dev_info(user->device,
+		dev_dbg(user->device,
 			"Cannot get a frame status if the channel isn't configured (%d, %d)", user->uid,
 			user->chan_uid);
 		err = -EPERM;
