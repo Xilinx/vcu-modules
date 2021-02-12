@@ -16,8 +16,13 @@
 
 
 #include <linux/types.h>
+#include <linux/version.h>
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+#include <linux/mfd/syscon/xlnx-vcu.h>
+#else
 #include <soc/xilinx/xlnx_vcu.h>
+#endif
 
 #define MEMORY_WORD_SIZE_IN_BITS 32
 
