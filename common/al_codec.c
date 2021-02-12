@@ -456,8 +456,12 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		goto fail;
 	}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+	codec->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
+#else
 	codec->regs = devm_ioremap_nocache(&pdev->dev,
 					   res->start, resource_size(res));
+#endif
 	codec->regs_size = res->end - res->start;
 
 	if (IS_ERR(codec->regs)) {
