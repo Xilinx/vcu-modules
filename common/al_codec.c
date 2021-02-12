@@ -494,8 +494,13 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 			else
 				pgtable_padding = 0;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+			add_memory(0, mem_res.start, resource_size(&mem_res) +
+					   pgtable_padding, MHP_NONE);
+#else
 			add_memory(0, mem_res.start, resource_size(&mem_res) +
 					   pgtable_padding);
+#endif
 #endif
 			}
 		}
