@@ -179,7 +179,11 @@ static void al5_dmabuf_release(struct dma_buf *buf)
 			  buffer->dma_handle);
 
 	put_device(dinfo->dev);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+	kfree_sensitive(buffer);
+#else
 	kzfree(buffer);
+#endif
 	kfree(dinfo);
 }
 

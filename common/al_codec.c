@@ -21,6 +21,7 @@
 #include <linux/of_address.h>
 #include <linux/of_reserved_mem.h>
 #include <linux/of.h>
+#include <linux/version.h>
 
 #include "al_mail.h"
 #include "al_codec_mails.h"
@@ -330,7 +331,11 @@ int al5_codec_open(struct inode *inode, struct file *filp)
 
 	err = al5_group_bind_user(&codec->users_group, user);
 	if (err) {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+		kfree_sensitive(user);
+#else
 		kzfree(user);
+#endif
 		return err;
 	}
 
@@ -369,8 +374,13 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 	}
 	al5_user_remove_residual_messages(user);
 	al5_group_unbind_user(&codec->users_group, user);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
+	kfree_sensitive(user);
+	kfree_sensitive(filp->private_data);
+#else
 	kzfree(user);
 	kzfree(filp->private_data);
+#endif
 
 	return 0;
 }
