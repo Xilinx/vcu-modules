@@ -213,7 +213,10 @@ static const struct dma_buf_ops al5_dmabuf_ops = {
 #if LINUX_VERSION_CODE < KERNEL_VERSION(4, 19, 0)
 	.map_atomic	= al5_dmabuf_kmap,
 #endif
+/* the map interface was removed in 5.8 */
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
 	.map		= al5_dmabuf_kmap,
+#endif
 #else
 	.kmap_atomic	= al5_dmabuf_kmap,
 	.kmap		= al5_dmabuf_kmap,
