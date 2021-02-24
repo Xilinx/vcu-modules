@@ -194,16 +194,16 @@ int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 	spin_lock(&group->lock);
 	user = retrieve_user(group, mail);
 
+        if (user == NULL) {
+		print_cannot_retrieve_user(group->device, al5_mail_get_uid(mail));
+		goto unlock;
+	}
+
 	if (mail_uid == AL_MCU_MSG_DESTROY_CHANNEL)
 		user->chan_uid = BAD_CHAN;
 
 	if (mail_uid == AL_MCU_MSG_CREATE_CHANNEL)
 		user->chan_uid = al5_mail_get_chan_uid(mail);
-
-	if (user == NULL) {
-		print_cannot_retrieve_user(group->device, al5_mail_get_uid(mail));
-		goto unlock;
-	}
 
 	ret = al5_user_deliver(user, mail);
 
