@@ -480,7 +480,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 				dev_err(&pdev->dev, "Failed to get shared dma pool with error : %d\n", err);
 			} else {
 				dev_dbg(&pdev->dev, "Using shared dma pool for allocation\n");
-				err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+				err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
 				if (err) {
 					dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
 					goto fail_mem;
