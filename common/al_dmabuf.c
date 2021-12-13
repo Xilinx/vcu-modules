@@ -195,12 +195,24 @@ static void *al5_dmabuf_kmap(struct dma_buf *dmabuf, unsigned long page_num)
 	return vaddr + page_num * PAGE_SIZE;
 }
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 10, 0)
+static int al5_dmabuf_vmap(struct dma_buf *dbuf, struct dma_buf_map *map)
+#else
 static void *al5_dmabuf_vmap(struct dma_buf *dbuf)
+#endif
 {
 	struct al5_dmabuf_priv *dinfo = dbuf->priv;
 	void *vaddr = dinfo->buffer->cpu_handle;
 
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 10, 0)
+	if (!vaddr)
+		return -ENOMEM;
+	dma_buf_map_set_vaddr(map, vaddr);
+
+	return 0;
+#else
 	return vaddr;
+#endif
 }
 
 static const struct dma_buf_ops al5_dmabuf_ops = {
