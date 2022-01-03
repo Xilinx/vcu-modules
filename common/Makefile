@@ -24,4 +24,5 @@ ifeq ($(CONFIG_ALLEGRO_ONLY),1)
   allegro-objs += al_l2_prefetch.o
 else
   allegro-objs += xil_l2_prefetch.o
+  allegro-objs += xil_clk.o
 endif

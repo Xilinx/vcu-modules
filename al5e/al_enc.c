@@ -45,6 +45,7 @@
 #include <linux/slab.h>
 #include <linux/stddef.h>
 #include <linux/vmalloc.h>
+#include <linux/version.h>
 
 #include "al_enc_ioctl.h"
 #include "al_alloc_ioctl.h"
@@ -59,8 +60,17 @@
 #include "al_mail.h"
 #include "enc_mails_factory.h"
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+#include "xil_clk.h"
+#endif
+
 #define AL5E_FIRMWARE "al5e.fw"
 #define AL5E_BOOTLOADER_FIRMWARE "al5e_b.fw"
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+#define AL5E_CORE_CLK "vcu_core_enc"
+#define AL5E_MCU_CLK "vcu_mcu_enc"
+#endif
 
 int max_users_nb = MAX_USERS_NB;
 static int al5e_codec_major;
@@ -228,6 +238,14 @@ static int al5e_probe(struct platform_device *pdev)
 	if (codec == NULL)
 		return -ENOMEM;
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	err = xil_clk_set_up(pdev, codec, AL5E_CORE_CLK, AL5E_MCU_CLK);
+	if (err) {
+		dev_err(&pdev->dev, "Failed to setup clock");
+		return err;
+	}
+#endif
+
 	err = al5_codec_set_up(codec, pdev, max_users_nb);
 	if (err) {
 		dev_err(&pdev->dev, "Failed to setup codec");
@@ -260,6 +278,10 @@ static int al5e_remove(struct platform_device *pdev)
 	al5_codec_tear_down(codec);
 	device_destroy(module_class, dev);
 	al5_clean_up_codec_cdev(codec);
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	xil_clk_clean_up(pdev, codec);
+#endif
 
 	return 0;
 }

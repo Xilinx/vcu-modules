@@ -28,6 +28,7 @@
 #include <linux/platform_device.h>
 #include <linux/interrupt.h>
 #include <linux/poll.h>
+#include <linux/version.h>
 
 #include "al_group.h"
 #include "mcu_interface.h"
@@ -66,6 +67,13 @@ struct al5_codec_desc {
 
 	struct al5_group users_group;
 	int minor;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
+	struct clk *pll_ref;
+	struct clk *core_clk;
+	struct clk *mcu_clk;
+	struct regmap *logicore_reg_ba;
+#endif
 };
 
 struct al5_filp_data {
