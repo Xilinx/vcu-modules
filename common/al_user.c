@@ -148,7 +148,6 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 	if (user->checkpoint == NO_CHECKPOINT)
 		return -EPERM;
 
-	user_queues_unlock(user);
 	for (i = 0; i < AL5_USER_OPS_NUMBER; ++i) {
 		err = mutex_lock_killable(&user->locks[i]);
 		if (err == -EINTR) {
@@ -181,6 +180,7 @@ int al5_user_destroy_channel(struct al5_user *user, int quiet)
 	}
 
 	user->checkpoint = CHECKPOINT_DESTROYED;
+	user_queues_unlock(user);
 	al5_user_destroy_channel_resources(user);
 
 unlock_mutexes:
