@@ -18,8 +18,13 @@
 #include <linux/of_dma.h>
 #include <linux/uaccess.h>
 #include <linux/slab.h>
+#include <linux/version.h>
 
 #include "dmaproxy.h"
+
+#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 15, 0)
+MODULE_IMPORT_NS(DMA_BUF);
+#endif
 
 static dev_t dmaproxy_dev;
 static struct cdev dmaproxy_cdev;
