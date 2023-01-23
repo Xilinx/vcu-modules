@@ -444,6 +444,10 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	struct mcu_mailbox_config config;
 	struct mcu_mailbox_interface *mcu;
 
+#ifdef CONFIG_MEMORY_HOTPLUG
+	unsigned long pgtable_padding;
+#endif
+
 	codec->device = &pdev->dev;
 
 	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
