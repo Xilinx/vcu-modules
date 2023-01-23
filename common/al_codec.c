@@ -51,7 +51,7 @@ static void set_icache_offset(struct al5_codec_desc *codec)
 
 static void set_dcache_offset(struct al5_codec_desc *codec)
 {
-	dma_addr_t mem_seg = codec->mem_offset & 0xFFFFFFFF00000000;
+	dma_addr_t mem_seg = codec->mem_offset & 0xFFFFFFFF80000000;
 	dma_addr_t dma_handle = mem_seg - MCU_CACHE_OFFSET;
 	unsigned long msb = 0;
 	u32 dcache_offset_lsb;
@@ -244,7 +244,8 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root,
 		goto unlock;
 	}
 
-	init_msg.addr = codec->suballoc_buf->dma_handle + MCU_CACHE_OFFSET;
+	init_msg.addr_v = (codec->suballoc_buf->dma_handle - (codec->mem_offset & 0xFFFFFFFF80000000)) + MCU_CACHE_OFFSET;
+	init_msg.addr_p = codec->suballoc_buf->dma_handle & 0x00000000FFFFFFFF;
 	init_msg.size = codec->suballoc_buf->size;
 	set_l2_info(codec->device, &init_msg);
 	al5_info("l2 prefetch size:%d (bits), l2 color bitdepth:%d\n",
