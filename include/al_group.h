@@ -38,6 +38,7 @@ void al5_group_deinit(struct al5_group *group);
 
 int al5_group_bind_user(struct al5_group *group, struct al5_user *user);
 void al5_group_unbind_user(struct al5_group *group, struct al5_user *user);
+void al5_group_unbind_user_without_group_spinlock (struct al5_group *group, struct al5_user *user);
 
 struct al5_user *al5_group_user_from_uid(struct al5_group *group, int user_uid);
 struct al5_user *al5_group_user_from_chan_uid(struct al5_group *group,
