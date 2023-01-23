@@ -350,6 +350,7 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 	struct al5_filp_data *private_data = filp->private_data;
 	struct al5_user *user = private_data->user;
 	struct al5_codec_desc *codec = private_data->codec;
+	unsigned long flags = 0;
 
 	if (al5_chan_is_created(user)) {
 		const int quiet = 1;
@@ -369,8 +370,11 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 		 * to avoid leaks */
 		al5_user_destroy_channel_resources(user);
 	}
+
+	spin_lock_irqsave(&(codec->users_group.lock), flags);
 	al5_user_remove_residual_messages(user);
-	al5_group_unbind_user(&codec->users_group, user);
+	al5_group_unbind_user_without_group_spinlock(&codec->users_group, user);
+	spin_unlock_irqrestore(&(codec->users_group.lock), flags);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 9, 0)
 	kfree_sensitive(user);
 	kfree_sensitive(filp->private_data);

@@ -72,13 +72,19 @@ EXPORT_SYMBOL_GPL(al5_group_bind_user);
 
 void al5_group_unbind_user(struct al5_group *group, struct al5_user *user)
 {
-	unsigned long flags = 0;
+        unsigned long flags = 0;
 
-	spin_lock_irqsave(&group->lock, flags);
-	group->users[user->uid] = NULL;
-	spin_unlock_irqrestore(&group->lock, flags);
+        spin_lock_irqsave(&group->lock, flags);
+        group->users[user->uid] = NULL;
+        spin_unlock_irqrestore(&group->lock, flags);
 }
 EXPORT_SYMBOL_GPL(al5_group_unbind_user);
+
+void al5_group_unbind_user_without_group_spinlock(struct al5_group *group, struct al5_user *user)
+{
+        group->users[user->uid] = NULL;
+}
+EXPORT_SYMBOL_GPL(al5_group_unbind_user_without_group_spinlock);
 
 struct al5_user *al5_group_user_from_uid(struct al5_group *group, int user_uid)
 {
