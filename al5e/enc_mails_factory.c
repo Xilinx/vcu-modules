@@ -51,8 +51,10 @@ struct al5_mail *al5e_create_channel_param_msg(u32 user_uid,
 					       u32 mcu_rc_plugin_size)
 {
 	/* One word for the user uid and two words for the rc plugin */
-	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_CREATE_CHANNEL, msg->size + 3 * sizeof(u32));
-	if(!mail)
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_CREATE_CHANNEL,
+						msg->size + 3 * sizeof(u32));
+
+	if (!mail)
 		return NULL;
 
 	al5_mail_write_word(mail, user_uid);

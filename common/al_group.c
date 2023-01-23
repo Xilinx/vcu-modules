@@ -72,17 +72,17 @@ EXPORT_SYMBOL_GPL(al5_group_bind_user);
 
 void al5_group_unbind_user(struct al5_group *group, struct al5_user *user)
 {
-        unsigned long flags = 0;
+	unsigned long flags = 0;
 
-        spin_lock_irqsave(&group->lock, flags);
-        group->users[user->uid] = NULL;
-        spin_unlock_irqrestore(&group->lock, flags);
+	spin_lock_irqsave(&group->lock, flags);
+	group->users[user->uid] = NULL;
+	spin_unlock_irqrestore(&group->lock, flags);
 }
 EXPORT_SYMBOL_GPL(al5_group_unbind_user);
 
 void al5_group_unbind_user_without_group_spinlock(struct al5_group *group, struct al5_user *user)
 {
-        group->users[user->uid] = NULL;
+	group->users[user->uid] = NULL;
 }
 EXPORT_SYMBOL_GPL(al5_group_unbind_user_without_group_spinlock);
 
@@ -200,7 +200,7 @@ int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 	spin_lock(&group->lock);
 	user = retrieve_user(group, mail);
 
-        if (user == NULL) {
+	if (user == NULL) {
 		print_cannot_retrieve_user(group->device, al5_mail_get_uid(mail));
 		goto unlock;
 	}
@@ -237,6 +237,7 @@ void handle_mail(struct al5_group *group, struct al5_mail *mail)
 	}else if (error == -ENOMEM)
 		dev_err(group->device,
 			"Failed to deliver mail to the user (memory shortage). Skipping...\n");
+
 }
 
 void read_mail(struct al5_group *group)

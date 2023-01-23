@@ -19,12 +19,12 @@
 
 #include "al_codec.h"
 
-#define VCU_PLL_CLK			0x34
-#define VCU_PLL_CLK_DEC			0x64
-#define VCU_MCU_CLK			0x24
-#define VCU_CORE_CLK			0x28
-#define MHZ				1000000
-#define FRAC				100
+#define VCU_PLL_CLK                     0x34
+#define VCU_PLL_CLK_DEC                 0x64
+#define VCU_MCU_CLK                     0x24
+#define VCU_CORE_CLK                    0x28
+#define MHZ                             1000000
+#define FRAC                            100
 
 int xil_clk_set_up(struct platform_device *pdev, struct al5_codec_desc *codec,
 		   const char *core_clk, const char *mcu_clk)
@@ -32,6 +32,7 @@ int xil_clk_set_up(struct platform_device *pdev, struct al5_codec_desc *codec,
 	u32 refclk, coreclk, mcuclk, inte, deci;
 	int err;
 	struct xvcu_device *xvcu_core = dev_get_drvdata(pdev->dev.parent);
+
 	codec->logicore_reg_ba = xvcu_core->logicore_reg_ba;
 
 	codec->pll_ref = devm_clk_get(pdev->dev.parent, "pll_ref");

@@ -115,17 +115,18 @@ static int try_to_create_channel(struct al5_user *user,
 
 	if (msg->rc_plugin_fd != -1) {
 		err = al5_get_dmabuf_info(user->device, msg->rc_plugin_fd,
-					    &rc_plugin_info);
+					  &rc_plugin_info);
 		if (err)
 			return err;
-		mcu_rc_plugin_addr = al5_mcu_get_virtual_address(rc_plugin_info.bus_address);
+		mcu_rc_plugin_addr = al5_mcu_get_virtual_address(
+			rc_plugin_info.bus_address);
 		mcu_rc_plugin_size = rc_plugin_info.size;
 	}
 
 	err =  al5_check_and_send(user, al5e_create_channel_param_msg(user->uid,
-									  param,
-									  mcu_rc_plugin_addr,
-									  mcu_rc_plugin_size));
+								      param,
+								      mcu_rc_plugin_addr,
+								      mcu_rc_plugin_size));
 
 	if (err)
 		return err;
@@ -182,7 +183,8 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 		err = allocate_channel_buffers(user, fb_message.buffers_needed);
 		if (err) {
 			dev_warn_ratelimited(user->device,
-					     "Failed internal buffers allocation, channel (%d, %d) isn't fully created yet", user->uid, user->chan_uid);
+					     "Failed internal buffers allocation, channel (%d, %d) isn't fully created yet", user->uid,
+					     user->chan_uid);
 			goto fail_allocate;
 		}
 		user->checkpoint = CHECKPOINT_SEND_INTERMEDIATE_BUFFERS;
@@ -192,7 +194,8 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 		err = send_intermediate_buffers(user);
 		if (err) {
 			dev_warn_ratelimited(user->device,
-					     "Failed to send intermediate buffers, channel (%d, %d) isn't fully created yet", user->uid, user->chan_uid);
+					     "Failed to send intermediate buffers, channel (%d, %d) isn't fully created yet", user->uid,
+					     user->chan_uid);
 			goto fail;
 		}
 		user->checkpoint = CHECKPOINT_SEND_REFERENCE_BUFFERS;
@@ -202,7 +205,8 @@ int al5e_user_create_channel(struct al5_user *user, struct al5_config_channel *m
 		err = send_reference_buffers(user);
 		if (err) {
 			dev_warn_ratelimited(user->device,
-					     "Failed to send reference buffers, channel (%d, %d) isn't fully created yet", user->uid, user->chan_uid);
+					     "Failed to send reference buffers, channel (%d, %d) isn't fully created yet", user->uid,
+					     user->chan_uid);
 			goto fail;
 		}
 		user->checkpoint = CHECKPOINT_CREATED;
@@ -233,7 +237,9 @@ int al5e_user_encode_one_frame(struct al5_user *user,
 		return err;
 
 	if (!al5_chan_is_created(user)) {
-		dev_err(user->device, "Cannot encode frame until channel is configured (%d, %d)", user->uid, user->chan_uid);
+		dev_err(user->device,
+			"Cannot encode frame until channel is configured (%d, %d)",
+			user->uid, user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}
@@ -298,7 +304,9 @@ int al5e_user_put_stream_buffer(struct al5_user *user,
 	int err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 
 	if (!al5_chan_is_created(user)) {
-		dev_err(user->device, "Cannot put a stream buffer if the channel isn't configured (%d, %d)", user->uid, user->chan_uid);
+		dev_err(user->device,
+			"Cannot put a stream buffer if the channel isn't configured (%d, %d)", user->uid,
+			user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}
@@ -356,7 +364,9 @@ int al5e_user_get_rec(struct al5_user *user, struct al5_reconstructed_info *msg)
 		return -EINTR;
 
 	if (!al5_chan_is_created(user)) {
-		dev_err(user->device, "Cannot get a reconstructed buffer if the channel isn't configured (%d, %d)", user->uid, user->chan_uid);
+		dev_err(user->device,
+			"Cannot get a reconstructed buffer if the channel isn't configured (%d, %d)", user->uid,
+			user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}
@@ -407,7 +417,9 @@ int al5e_user_release_rec(struct al5_user *user, u32 fd)
 		return -EINTR;
 
 	if (!al5_chan_is_created(user)) {
-		dev_err(user->device, "Cannot release a reconstructed buffer if the channel isn't configured (%d, %d)", user->uid, user->chan_uid);
+		dev_err(user->device,
+			"Cannot release a reconstructed buffer if the channel isn't configured (%d, %d)", user->uid,
+			user->chan_uid);
 		err = -EPERM;
 		goto unlock;
 	}

@@ -244,7 +244,10 @@ static int init_mcu(struct al5_codec_desc *codec, struct al5_user *root,
 		goto unlock;
 	}
 
-	init_msg.addr_v = (codec->suballoc_buf->dma_handle - (codec->mem_offset & 0xFFFFFFFF80000000)) + MCU_CACHE_OFFSET;
+	init_msg.addr_v =
+		(codec->suballoc_buf->dma_handle -
+		 (codec->mem_offset & 0xFFFFFFFF80000000)) +
+		MCU_CACHE_OFFSET;
 	init_msg.addr_p = codec->suballoc_buf->dma_handle & 0x00000000FFFFFFFF;
 	init_msg.size = codec->suballoc_buf->size;
 	set_l2_info(codec->device, &init_msg);
@@ -364,7 +367,8 @@ int al5_codec_release(struct inode *inode, struct file *filp)
 		}
 		if (ret != 0)
 			dev_err(codec->device,
-				"Failed to destroy channel on mcu. Something went wrong (%d)", ret);
+				"Failed to destroy channel on mcu. Something went wrong (%d)",
+				ret);
 
 		/* best effort. If everything went wrong, still free the channel resources
 		 * to avoid leaks */
@@ -476,29 +480,36 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 
 		if (!err) {
 			err = of_reserved_mem_device_init(&pdev->dev);
-			if (err) {
-				dev_err(&pdev->dev, "Failed to get shared dma pool with error : %d\n", err);
-			} else {
-				dev_dbg(&pdev->dev, "Using shared dma pool for allocation\n");
-				err = dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(64));
+			if (err)
+				dev_err(&pdev->dev,
+					"Failed to get shared dma pool with error : %d\n",
+					err);
+			else {
+				dev_dbg(&pdev->dev,
+					"Using shared dma pool for allocation\n");
+				err =
+					dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(
+									  64));
 				if (err) {
-					dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
+					dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n",
+						err);
 					goto fail_mem;
 				}
 
 #ifdef CONFIG_MEMORY_HOTPLUG
-			/* Hotplug requires 0x40000000 alignment so round to nearest multiple */
-			if (resource_size(&mem_res) % HOTPLUG_ALIGN)
-				pgtable_padding = HOTPLUG_ALIGN -
-					(resource_size(&mem_res) % HOTPLUG_ALIGN);
-			else
-				pgtable_padding = 0;
+				/* Hotplug requires 0x40000000 alignment so round to nearest multiple */
+				if (resource_size(&mem_res) % HOTPLUG_ALIGN)
+					pgtable_padding = HOTPLUG_ALIGN -
+							  (resource_size(&mem_res) %
+							   HOTPLUG_ALIGN);
+				else
+					pgtable_padding = 0;
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-			add_memory(0, mem_res.start, resource_size(&mem_res) +
+				add_memory(0, mem_res.start, resource_size(&mem_res) +
 					   pgtable_padding, MHP_NONE);
 #else
-			add_memory(0, mem_res.start, resource_size(&mem_res) +
+				add_memory(0, mem_res.start, resource_size(&mem_res) +
 					   pgtable_padding);
 #endif
 #endif

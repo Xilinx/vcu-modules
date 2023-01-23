@@ -32,21 +32,21 @@ static struct class *dmaproxy_cl;
 #define MINOR_CNT 8
 
 struct dmacopy_done {
-	bool		done;
-	wait_queue_head_t       wait;
+	bool done;
+	wait_queue_head_t wait;
 };
 
 struct dmaproxy_data {
-	struct dma_chan  *chan;
-	struct dma_buf	*src_dbuf;
-	struct dma_buf_attachment  *src_attach;
-	struct sg_table  *src_sgt;
-	struct dma_buf  *dst_dbuf;
-	struct dma_buf_attachment  *dst_attach;
-	struct sg_table  *dst_sgt;
-	dma_addr_t  src_buf;
-	dma_addr_t  dst_buf;
-	struct dmacopy_done	done;
+	struct dma_chan *chan;
+	struct dma_buf *src_dbuf;
+	struct dma_buf_attachment *src_attach;
+	struct sg_table *src_sgt;
+	struct dma_buf *dst_dbuf;
+	struct dma_buf_attachment *dst_attach;
+	struct sg_table *dst_sgt;
+	dma_addr_t src_buf;
+	dma_addr_t dst_buf;
+	struct dmacopy_done done;
 };
 
 
@@ -96,10 +96,11 @@ static int dmaproxy_close(struct inode *i, struct file *f)
 	return 0;
 }
 
-static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t dmaproxy)
+static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
+			      dmaproxy_arg_t dmaproxy)
 {
 	struct dma_device *dma_dev = dmaproxy_data->chan->device;
-	u8  align = 0;
+	u8 align = 0;
 
 	dmaproxy_data->src_dbuf = dma_buf_get(dmaproxy.src_fd);
 	if (IS_ERR(dmaproxy_data->src_dbuf)) {
@@ -113,7 +114,8 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_
 		goto fail_src_attach;
 	}
 
-	dmaproxy_data->src_sgt = dma_buf_map_attachment(dmaproxy_data->src_attach, DMA_BIDIRECTIONAL);
+	dmaproxy_data->src_sgt = dma_buf_map_attachment(dmaproxy_data->src_attach,
+							DMA_BIDIRECTIONAL);
 	if (IS_ERR(dmaproxy_data->src_sgt)) {
 		pr_err("dma_buf_map get failed for src\n");
 		goto fail_src_map;
@@ -128,22 +130,23 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_
 			goto fail_dst_dbuf;
 		}
 
-		dmaproxy_data->dst_attach = dma_buf_attach(dmaproxy_data->dst_dbuf, dma_dev->dev);
+		dmaproxy_data->dst_attach = dma_buf_attach(dmaproxy_data->dst_dbuf,
+							   dma_dev->dev);
 		if (IS_ERR(dmaproxy_data->dst_attach)) {
 			pr_err("dma_buf_attach get failed for dst\n");
 			goto fail_dst_attach;
 		}
 
-		dmaproxy_data->dst_sgt = dma_buf_map_attachment(dmaproxy_data->dst_attach, DMA_BIDIRECTIONAL);
+		dmaproxy_data->dst_sgt = dma_buf_map_attachment(dmaproxy_data->dst_attach,
+								DMA_BIDIRECTIONAL);
 		if (IS_ERR(dmaproxy_data->dst_sgt)) {
 			pr_err("dma_buf_map get failed for dst\n");
 			goto fail_dst_map;
 		}
 
 		dmaproxy_data->dst_buf = sg_dma_address(dmaproxy_data->dst_sgt->sgl);
-	} else {
+	} else
 		dmaproxy_data->dst_buf = dmaproxy_data->src_buf;
-	}
 
 	align = dma_dev->copy_align;
 	if (1 << align > dmaproxy.size) {
@@ -166,13 +169,15 @@ fail_align:
 	if (dmaproxy.dst_fd == dmaproxy.src_fd)
 		goto fail_dst_dbuf;
 	else
-		dma_buf_unmap_attachment(dmaproxy_data->dst_attach, dmaproxy_data->dst_sgt, DMA_BIDIRECTIONAL);
+		dma_buf_unmap_attachment(dmaproxy_data->dst_attach,
+					 dmaproxy_data->dst_sgt, DMA_BIDIRECTIONAL);
 fail_dst_map:
 	dma_buf_detach(dmaproxy_data->dst_dbuf, dmaproxy_data->dst_attach);
 fail_dst_attach:
 	dma_buf_put(dmaproxy_data->dst_dbuf);
 fail_dst_dbuf:
-	dma_buf_unmap_attachment(dmaproxy_data->src_attach, dmaproxy_data->src_sgt, DMA_BIDIRECTIONAL);
+	dma_buf_unmap_attachment(dmaproxy_data->src_attach, dmaproxy_data->src_sgt,
+				 DMA_BIDIRECTIONAL);
 fail_src_map:
 	dma_buf_detach(dmaproxy_data->src_dbuf, dmaproxy_data->src_attach);
 fail_src_attach:
@@ -183,11 +188,13 @@ fail_src_dbuf:
 
 static void dmabuf_cleanup(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t dmaproxy)
 {
-	dma_buf_unmap_attachment(dmaproxy_data->src_attach, dmaproxy_data->src_sgt, DMA_BIDIRECTIONAL);
+	dma_buf_unmap_attachment(dmaproxy_data->src_attach, dmaproxy_data->src_sgt,
+				 DMA_BIDIRECTIONAL);
 	dma_buf_detach(dmaproxy_data->src_dbuf, dmaproxy_data->src_attach);
 	dma_buf_put(dmaproxy_data->src_dbuf);
 	if (dmaproxy.dst_fd != dmaproxy.src_fd) {
-		dma_buf_unmap_attachment(dmaproxy_data->dst_attach, dmaproxy_data->dst_sgt, DMA_BIDIRECTIONAL);
+		dma_buf_unmap_attachment(dmaproxy_data->dst_attach,
+					 dmaproxy_data->dst_sgt, DMA_BIDIRECTIONAL);
 		dma_buf_detach(dmaproxy_data->dst_dbuf, dmaproxy_data->dst_attach);
 		dma_buf_put(dmaproxy_data->dst_dbuf);
 	}
@@ -195,13 +202,13 @@ static void dmabuf_cleanup(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t d
 
 static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t dmaproxy)
 {
-	struct dma_device	*dma_dev;
-	struct dma_chan	*chan;
-	struct dma_async_tx_descriptor	*tx = NULL;
-	struct dmaengine_unmap_data	*um = NULL;
-	enum dma_status   status;
+	struct dma_device *dma_dev;
+	struct dma_chan *chan;
+	struct dma_async_tx_descriptor *tx = NULL;
+	struct dmaengine_unmap_data *um = NULL;
+	enum dma_status status;
 	enum dma_ctrl_flags flags;
-	dma_cookie_t	 cookie;
+	dma_cookie_t cookie;
 	int ret = 0;
 
 	chan = dmaproxy_data->chan;
@@ -215,7 +222,9 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	um->len = dmaproxy.size;
 
 	um->addr[0] = dma_map_page(dma_dev->dev, phys_to_page(dmaproxy_data->src_buf),
-				   offset_in_page(dmaproxy_data->src_buf), um->len, DMA_TO_DEVICE);
+				   offset_in_page(
+					   dmaproxy_data->src_buf), um->len,
+				   DMA_TO_DEVICE);
 	ret = dma_mapping_error(dma_dev->dev, um->addr[0]);
 	if (ret) {
 		pr_err("dma map error for source buffer\n");
@@ -224,7 +233,9 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	um->to_cnt++;
 
 	um->addr[1] = dma_map_page(dma_dev->dev, phys_to_page(dmaproxy_data->dst_buf),
-				   offset_in_page(dmaproxy_data->dst_buf), um->len, DMA_BIDIRECTIONAL);
+				   offset_in_page(
+					   dmaproxy_data->dst_buf), um->len,
+				   DMA_BIDIRECTIONAL);
 	ret = dma_mapping_error(dma_dev->dev, um->addr[1]);
 	if (ret) {
 		pr_err("dma map error for destination buffer\n");
@@ -233,7 +244,8 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	um->bidi_cnt++;
 
 	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
-	tx = dma_dev->device_prep_dma_memcpy(chan, um->addr[1], um->addr[0], um->len, flags);
+	tx = dma_dev->device_prep_dma_memcpy(chan, um->addr[1], um->addr[0], um->len,
+					     flags);
 	if (!tx) {
 		pr_err("device prep for dma memcpy get failed\n");
 		ret = -ECANCELED;
@@ -276,13 +288,14 @@ exit:
 
 static long dmaproxy_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 {
-	dmaproxy_arg_t	dmaproxy;
-	struct dmaproxy_data	*dmaproxy_data = f->private_data;
-	int	ret;
+	dmaproxy_arg_t dmaproxy;
+	struct dmaproxy_data *dmaproxy_data = f->private_data;
+	int ret;
 
 	switch (cmd) {
 	case DMAPROXY_COPY: {
-		if (copy_from_user(&dmaproxy, (dmaproxy_arg_t *)arg, sizeof(dmaproxy_arg_t))) {
+		if (copy_from_user(&dmaproxy, (dmaproxy_arg_t *)arg,
+				   sizeof(dmaproxy_arg_t))) {
 			pr_err("copy from user failed for DMAPROXY_COPY\n");
 			return -EFAULT;
 		}
@@ -304,9 +317,9 @@ static long dmaproxy_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 }
 
 static const struct file_operations dmaproxy_fops = {
-	.owner = THIS_MODULE,
-	.open = dmaproxy_open,
-	.release = dmaproxy_close,
+	.owner		= THIS_MODULE,
+	.open		= dmaproxy_open,
+	.release	= dmaproxy_close,
 	.unlocked_ioctl = dmaproxy_ioctl
 };
 
@@ -333,7 +346,8 @@ static int __init dma_proxy_init(void)
 		return PTR_ERR(dmaproxy_cl);
 	}
 
-	dmaproxy_device = device_create(dmaproxy_cl, NULL, dmaproxy_dev, NULL, "dmaproxy");
+	dmaproxy_device =
+		device_create(dmaproxy_cl, NULL, dmaproxy_dev, NULL, "dmaproxy");
 	if (IS_ERR(dmaproxy_device)) {
 		class_destroy(dmaproxy_cl);
 		cdev_del(&dmaproxy_cdev);

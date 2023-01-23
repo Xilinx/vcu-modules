@@ -173,7 +173,7 @@ int al5d_user_wait_for_status(struct al5_user *user, struct al5_params *msg)
 			al5d_mail_get_status(msg, feedback);
 		else
 			err = -EWOULDBLOCK;
-	}else  {
+	}else {
 		feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_STATUS]);
 		if (feedback)
 			al5d_mail_get_status(msg, feedback);
@@ -203,7 +203,7 @@ int al5d_user_wait_for_start_code(struct al5_user *user,
 			al5d_mail_get_sc_status(msg, feedback);
 		else
 			err = -EWOULDBLOCK;
-	}else  {
+	}else {
 		feedback = al5_queue_pop(&user->queues[AL5_USER_MAIL_SC]);
 		if (feedback)
 			al5d_mail_get_sc_status(msg, feedback);

@@ -108,22 +108,22 @@ void al5_user_remove_residual_messages(struct al5_user *user)
 		while (mail) {
 			u32 const mail_uid = al5_mail_get_uid(mail);
 
-			if(mail_uid == AL_MCU_MSG_CREATE_CHANNEL)
-			{
+			if (mail_uid == AL_MCU_MSG_CREATE_CHANNEL) {
 				int const quiet = 1;
 				int tries = 0;
 				int ret = -1;
 				user->chan_uid = al5_mail_get_chan_uid(mail);
 				user->checkpoint = CHECKPOINT_CREATED;
 				/* best effort to destroy the channel if it wasn't already */
-				while (ret != 0 && tries < 10000)
-				{
+				while (ret != 0 && tries < 10000) {
 					ret = al5_user_destroy_channel(user, quiet);
 					++tries;
 				}
 
 				if (ret != 0)
-					printk("New issue: Failed to destroy channel on mcu. Something went wrong (%d)", ret);
+					printk(
+						"New issue: Failed to destroy channel on mcu. Something went wrong (%d)",
+						ret);
 			}
 
 			al5_free_mail(mail);
