@@ -51,7 +51,7 @@ static void set_icache_offset(struct al5_codec_desc *codec)
 
 static void set_dcache_offset(struct al5_codec_desc *codec)
 {
-	dma_addr_t mem_seg = codec->icache->dma_handle & 0xffffffff00000000;
+	dma_addr_t mem_seg = codec->mem_offset & 0xFFFFFFFF00000000;
 	dma_addr_t dma_handle = mem_seg - MCU_CACHE_OFFSET;
 	unsigned long msb = 0;
 	u32 dcache_offset_lsb;
@@ -179,17 +179,13 @@ static int setup_and_start_mcu(struct al5_codec_desc *codec,
 
 static int alloc_mcu_caches(struct al5_codec_desc *codec)
 {
-	/* alloc the icache and the dcache */
+	/* alloc the icache */
 	codec->icache = al5_alloc_dma(codec->device, AL5_ICACHE_SIZE);
 	if (!codec->icache)
 		return -ENOMEM;
 
-	/* dcache map base addr */
-
-	codec->dcache_base_addr = 0;
-
-	al5_writel(codec->icache->dma_handle >> 32, AXI_ADDR_OFFSET_IP);
 	setup_info("icache phy is at %p", (void *)codec->icache->dma_handle);
+
 
 	return 0;
 }
@@ -438,7 +434,6 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 	const char *device_name = dev_name(&pdev->dev);
 	struct mcu_mailbox_config config;
 	struct mcu_mailbox_interface *mcu;
-	unsigned long pgtable_padding;
 
 	codec->device = &pdev->dev;
 
@@ -503,6 +498,8 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 #endif
 #endif
 			}
+			codec->mem_offset = mem_res.start;
+			al5_writel(codec->mem_offset >> 32, AXI_ADDR_OFFSET_IP);
 		}
 	}
 	of_node_put(mem_node);

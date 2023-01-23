@@ -63,7 +63,7 @@ struct al5_codec_desc {
 
 	/* cache */
 	struct al5_dma_buffer *icache, *suballoc_buf;
-	dma_addr_t dcache_base_addr;
+	phys_addr_t mem_offset;
 
 	struct al5_group users_group;
 	int minor;
