@@ -18,14 +18,14 @@
 #ifndef __AL_GROUP__
 #define __AL_GROUP__
 
-#include <linux/spinlock.h>
+#include <linux/mutex.h>
 
 #include "mcu_interface.h"
 #include "al_user.h"
 
 struct al5_group {
 	struct mcu_mailbox_interface *mcu;
-	spinlock_t lock;
+	struct mutex lock;
 
 	int max_users_nb;
 	struct al5_user **users;

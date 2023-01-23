@@ -29,7 +29,7 @@ void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu,
 {
 	group->users = kcalloc(max_users_nb, sizeof(void *), GFP_KERNEL);
 	group->max_users_nb = max_users_nb;
-	spin_lock_init(&group->lock);
+	mutex_init(&group->lock);
 	group->mcu = mcu;
 	group->device = device;
 }
@@ -42,12 +42,11 @@ void al5_group_deinit(struct al5_group *group)
 
 int al5_group_bind_user(struct al5_group *group, struct al5_user *user)
 {
-	unsigned long flags = 0;
 	int uid = -1;
 	int err = 0;
 	int i;
 
-	spin_lock_irqsave(&group->lock, flags);
+	mutex_lock(&group->lock);
 	for (i = 0; i < group->max_users_nb; ++i) {
 		if (group->users[i] == NULL) {
 			uid = i;
@@ -64,7 +63,7 @@ int al5_group_bind_user(struct al5_group *group, struct al5_user *user)
 	al5_user_init(user, uid, group->mcu, group->device);
 
 unlock:
-	spin_unlock_irqrestore(&group->lock, flags);
+	mutex_unlock(&group->lock);
 	return err;
 
 }
@@ -72,11 +71,9 @@ EXPORT_SYMBOL_GPL(al5_group_bind_user);
 
 void al5_group_unbind_user(struct al5_group *group, struct al5_user *user)
 {
-	unsigned long flags = 0;
-
-	spin_lock_irqsave(&group->lock, flags);
+	mutex_lock(&group->lock);
 	group->users[user->uid] = NULL;
-	spin_unlock_irqrestore(&group->lock, flags);
+	mutex_unlock(&group->lock);
 }
 EXPORT_SYMBOL_GPL(al5_group_unbind_user);
 
@@ -197,7 +194,7 @@ int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 	int ret = AL_NO_USER;
 	u32 mail_uid = al5_mail_get_uid(mail);
 
-	spin_lock(&group->lock);
+	mutex_lock(&group->lock);
 	user = retrieve_user(group, mail);
 
 	if (user == NULL) {
@@ -214,7 +211,7 @@ int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 	ret = al5_user_deliver(user, mail);
 
 unlock:
-	spin_unlock(&group->lock);
+	mutex_unlock(&group->lock);
 	return ret;
 }
 
