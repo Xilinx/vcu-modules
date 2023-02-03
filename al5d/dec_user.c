@@ -217,3 +217,48 @@ int al5d_user_wait_for_start_code(struct al5_user *user,
 	return err;
 }
 
+int al5d_user_get(struct al5_user *user, struct al5_params *msg)
+{
+	struct al5_mail *feedback;
+	int err;
+
+	err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
+
+	if (err == -EINTR)
+		return err;
+
+
+	err = al5_check_and_send(user, al5d_get_msg(user->uid, msg));
+
+	if (err)
+		goto unlock;
+
+	err = al5_queue_pop_timeout(&feedback,
+			&user->queues[AL5_USER_MAIL_GET]);
+
+	if (err)
+		goto unlock;
+
+	memcpy(msg->opaque, feedback->body + sizeof(user->uid), msg->size);
+	al5_free_mail(feedback);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
+	return 0;
+unlock:
+	dev_err(user->device, "Getter failed.");
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
+	return err;
+}
+
+int al5d_user_set(struct al5_user *user, struct al5_params *msg)
+{
+	int err;
+
+	err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
+
+	if (err == -EINTR)
+		return err;
+
+	err = al5_check_and_send(user, al5d_set_msg(user->chan_uid, msg));
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
+	return err;
+}

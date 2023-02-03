@@ -100,3 +100,28 @@ al5d_create_search_sc_mail(u32 user_uid, struct al5_search_sc_msg *msg)
 
 	return mail;
 }
+
+struct al5_mail *
+al5d_get_msg(u32 user_uid, struct al5_params *msg)
+{
+	int mail_size = 4 + msg->size;
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_GET,
+						mail_size);
+
+	al5_mail_write_word(mail, user_uid);
+	al5_mail_write(mail, msg->opaque, msg->size);
+	return mail;
+}
+
+
+struct al5_mail *
+al5d_set_msg(u32 user_uid, struct al5_params *msg)
+{
+	int mail_size = 4 + msg->size;
+	struct al5_mail *mail = al5_mail_create(AL_MCU_MSG_SET,
+						mail_size);
+
+	al5_mail_write_word(mail, user_uid);
+	al5_mail_write(mail, msg->opaque, msg->size);
+	return mail;
+}

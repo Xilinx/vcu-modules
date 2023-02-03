@@ -49,6 +49,8 @@ enum al5_mail_uid {
 	AL_MCU_MSG_SET_IRQ_TIMER_BUFFER,
 
 	AL_MCU_MSG_DECODE_ONE_SLICE,
+	AL_MCU_MSG_GET,
+	AL_MCU_MSG_SET,
 
 	/* sentinel */
 	AL_MCU_MSG_MAX,

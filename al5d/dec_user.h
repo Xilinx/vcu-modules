@@ -31,3 +31,5 @@ int al5d_user_wait_for_start_code(struct al5_user *user,
 				  struct al5_scstatus *msg);
 int al5d_user_decode_one_slice(struct al5_user *user,
 			       struct al5_decode_msg *msg);
+int al5d_user_get(struct al5_user *user, struct al5_params *msg);
+int al5d_user_set(struct al5_user *user, struct al5_params *msg);

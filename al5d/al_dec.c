@@ -198,7 +198,20 @@ static long al5d_ioctl(struct file *filp, unsigned int cmd,
 	case GET_DMA_PHY:
 		ret = al5_ioctl_get_dmabuf_dma_addr(codec->device, arg);
 		return ret;
-
+	case AL_MCU_GET:
+		if (copy_from_user(&params, (void *)arg, sizeof(params)))
+			return -EFAULT;
+		ret = al5d_user_get(user, &params);
+		if (copy_to_user((void *)arg, &params, sizeof(params)))
+			return -EFAULT;
+		return ret;
+	case AL_MCU_SET:
+		if (copy_from_user(&params, (void *)arg, sizeof(params)))
+			return -EFAULT;
+		ret = al5d_user_set(user, &params);
+		if (copy_to_user((void *)arg, &params, sizeof(params)))
+			return -EFAULT;
+		return ret;
 	default:
 		return ioctl_usage(user, cmd);
 	}

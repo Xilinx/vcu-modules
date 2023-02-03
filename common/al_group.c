@@ -174,6 +174,7 @@ struct al5_user *retrieve_user(struct al5_group *group, struct al5_mail *mail)
 		break;
 	case AL_MCU_MSG_INIT:
 	case AL_MCU_MSG_SEARCH_START_CODE:
+	case AL_MCU_MSG_GET:
 		user_uid = al5_mail_get_word(mail, 0);
 		user = al5_group_user_from_uid(group, user_uid);
 		break;

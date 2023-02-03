@@ -28,6 +28,9 @@
 #define AL_MCU_SEARCH_START_CODE _IOWR('q', 8, struct al5_search_sc_msg)
 #define AL_MCU_WAIT_FOR_START_CODE _IOWR('q', 9, struct al5_scstatus)
 #define AL_MCU_DECODE_ONE_SLICE _IOWR('q', 18, struct al5_decode_msg)
+#define AL_MCU_GET _IOWR('q', 20, struct al5_params)
+#define AL_MCU_SET _IOWR('q', 21, struct al5_params)
+
 
 struct al5_channel_status {
 	__u32 error_code;

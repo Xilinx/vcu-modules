@@ -35,5 +35,7 @@ struct al5_mail *al5d_create_search_sc_mail(u32 user_uid,
 					    struct al5_search_sc_msg *msg);
 struct al5_mail *al5d_create_decode_one_slice_msg(u32 chan_uid,
 						  struct al5_decode_msg *msg);
+struct al5_mail *al5d_get_msg(u32 user_uid, struct al5_params *msg);
+struct al5_mail *al5d_set_msg(u32 user_uid, struct al5_params *msg);
 
 #endif /* _MCU_DEC_H_ */
