@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 #ifndef DMAPROXY_IOCTL_H
 #define DMAPROXY_IOCTL_H
 #include <linux/ioctl.h>
