@@ -33,6 +33,12 @@
 #ifdef CONFIG_MEMORY_HOTPLUG
 #define HOTPLUG_ALIGN 0x40000000
 #endif
+
+/* Avoid race condition when calling
+ *  platform_get_irq by different probs
+ */
+static DEFINE_MUTEX(irq_mutex);
+
 static void set_icache_offset(struct al5_codec_desc *codec)
 {
 	dma_addr_t dma_handle = codec->icache->dma_handle - MCU_CACHE_OFFSET;
@@ -452,7 +458,10 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		goto fail;
 	}
 
+	mutex_lock(&irq_mutex);
 	irq = platform_get_irq(pdev, 0);
+	mutex_unlock(&irq_mutex);
+
 	if (irq < 0) {
 		dev_err(&pdev->dev, "Failed to get IRQ");
 		err = irq;
