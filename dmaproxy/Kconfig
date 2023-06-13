@@ -1,6 +1,6 @@
 config DMAPROXY
         tristate "DMA Proxy client"
-        depends on DMA_ENGINE
+        depends on DMA_ENGINE && XILINX_ZYNQMP_DMA
         select DMA_ENGINE_RAID
         help
           Simple DMA proxy client. Exports APIs to perform Mem2Mem DMA transfer

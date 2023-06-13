@@ -73,7 +73,8 @@ static int dmaproxy_open(struct inode *i, struct file *f)
 
 	chan = dma_request_channel(mask, NULL, NULL);
 	if (!chan) {
-		pr_err("No more DMA channel available\n");
+		pr_err("dmaproxy: No more DMA channel available\n");
+		kfree(dmaproxy_data);
 		return -EBUSY;
 	}
 
@@ -104,20 +105,20 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 
 	dmaproxy_data->src_dbuf = dma_buf_get(dmaproxy.src_fd);
 	if (IS_ERR(dmaproxy_data->src_dbuf)) {
-		pr_err("dma_buf_get failed for src\n");
+		pr_err("dmaproxy: dma_buf_get failed for src\n");
 		goto fail_src_dbuf;
 	}
 
 	dmaproxy_data->src_attach = dma_buf_attach(dmaproxy_data->src_dbuf, dma_dev->dev);
 	if (IS_ERR(dmaproxy_data->src_attach)) {
-		pr_err("dma_buf_attach get failed for src\n");
+		pr_err("dmaproxy: dma_buf_attach get failed for src\n");
 		goto fail_src_attach;
 	}
 
 	dmaproxy_data->src_sgt = dma_buf_map_attachment(dmaproxy_data->src_attach,
 							DMA_BIDIRECTIONAL);
 	if (IS_ERR(dmaproxy_data->src_sgt)) {
-		pr_err("dma_buf_map get failed for src\n");
+		pr_err("dmaproxy: dma_buf_map get failed for src\n");
 		goto fail_src_map;
 	}
 
@@ -126,21 +127,21 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 	if (dmaproxy.dst_fd != dmaproxy.src_fd) {
 		dmaproxy_data->dst_dbuf = dma_buf_get(dmaproxy.dst_fd);
 		if (IS_ERR(dmaproxy_data->dst_dbuf)) {
-			pr_err("dma_buf_get failed for dst\n");
+			pr_err("dmaproxy: dma_buf_get failed for dst\n");
 			goto fail_dst_dbuf;
 		}
 
 		dmaproxy_data->dst_attach = dma_buf_attach(dmaproxy_data->dst_dbuf,
 							   dma_dev->dev);
 		if (IS_ERR(dmaproxy_data->dst_attach)) {
-			pr_err("dma_buf_attach get failed for dst\n");
+			pr_err("dmaproxy: dma_buf_attach get failed for dst\n");
 			goto fail_dst_attach;
 		}
 
 		dmaproxy_data->dst_sgt = dma_buf_map_attachment(dmaproxy_data->dst_attach,
 								DMA_BIDIRECTIONAL);
 		if (IS_ERR(dmaproxy_data->dst_sgt)) {
-			pr_err("dma_buf_map get failed for dst\n");
+			pr_err("dmaproxy: dma_buf_map get failed for dst\n");
 			goto fail_dst_map;
 		}
 
@@ -150,7 +151,7 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 
 	align = dma_dev->copy_align;
 	if (1 << align > dmaproxy.size) {
-		pr_err("%lu-byte buffer too small for %d-byte alignment\n",
+		pr_err("dmaproxy: %lu-byte buffer too small for %d-byte alignment\n",
 		       dmaproxy.size, 1 << align);
 		goto fail_align;
 	}
@@ -216,7 +217,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 
 	um = dmaengine_get_unmap_data(dma_dev->dev, 2, GFP_KERNEL);
 	if (!um) {
-		pr_err("dmaengine get unmap data failed\n");
+		pr_err("dmaproxy: dmaengine get unmap data failed\n");
 		return -ENOMEM;
 	}
 	um->len = dmaproxy.size;
@@ -227,7 +228,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 				   DMA_TO_DEVICE);
 	ret = dma_mapping_error(dma_dev->dev, um->addr[0]);
 	if (ret) {
-		pr_err("dma map error for source buffer\n");
+		pr_err("dmaproxy: dma map error for source buffer\n");
 		goto exit;
 	}
 	um->to_cnt++;
@@ -238,7 +239,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 				   DMA_BIDIRECTIONAL);
 	ret = dma_mapping_error(dma_dev->dev, um->addr[1]);
 	if (ret) {
-		pr_err("dma map error for destination buffer\n");
+		pr_err("dmaproxy: dma map error for destination buffer\n");
 		goto exit;
 	}
 	um->bidi_cnt++;
@@ -247,7 +248,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	tx = dma_dev->device_prep_dma_memcpy(chan, um->addr[1], um->addr[0], um->len,
 					     flags);
 	if (!tx) {
-		pr_err("device prep for dma memcpy get failed\n");
+		pr_err("dmaproxy: device prep for dma memcpy get failed\n");
 		ret = -ECANCELED;
 		goto exit;
 	}
@@ -259,7 +260,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	cookie = tx->tx_submit(tx);
 
 	if (dma_submit_error(cookie)) {
-		pr_err("dma submit error\n");
+		pr_err("dmaproxy: dma submit error\n");
 		ret = -ECANCELED;
 		goto exit;
 	}
@@ -272,11 +273,11 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
 
 	if (!dmaproxy_data->done.done) {
-		pr_err("timeout error while dma copy\n");
+		pr_err("dmaproxy: timeout error while dma copy\n");
 		ret = -ETIME;
 		goto exit;
 	} else if (status != DMA_COMPLETE) {
-		pr_err("dma copy get failed\n");
+		pr_err("dmaproxy: dma copy get failed\n");
 		ret = -ECANCELED;
 		goto exit;
 	}
@@ -296,7 +297,7 @@ static long dmaproxy_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 	case DMAPROXY_COPY: {
 		if (copy_from_user(&dmaproxy, (dmaproxy_arg_t *)arg,
 				   sizeof(dmaproxy_arg_t))) {
-			pr_err("copy from user failed for DMAPROXY_COPY\n");
+			pr_err("dmaproxy: copy from user failed for DMAPROXY_COPY\n");
 			return -EFAULT;
 		}
 
