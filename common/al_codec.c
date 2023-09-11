@@ -185,11 +185,16 @@ static int setup_and_start_mcu(struct al5_codec_desc *codec,
 
 static int alloc_mcu_caches(struct al5_codec_desc *codec)
 {
-	/* alloc the icache */
+	/* alloc the icache and the dcache */
 	codec->icache = al5_alloc_dma(codec->device, AL5_ICACHE_SIZE);
 	if (!codec->icache)
 		return -ENOMEM;
 
+	/* dcache map base addr */
+
+	codec->dcache_base_addr = 0;
+
+	al5_writel(codec->icache->dma_handle >> 32, AXI_ADDR_OFFSET_IP);
 	setup_info("icache phy is at %p", (void *)codec->icache->dma_handle);
 
 
@@ -429,6 +434,18 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
 		stop_mcu(codec);
 		goto release_firmware;
 	}
+	err = of_reserved_mem_device_init(&pdev->dev);
+	if (err) {
+		dev_err(&pdev->dev, "Failed to get shared dma pool with error : %d\n", err);
+	} else {
+		dev_dbg(&pdev->dev, "Using shared dma pool for allocation\n");
+		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
+		if (err) {
+			dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
+			goto fail;
+		}
+	}
+
 	al5_group_unbind_user(&codec->users_group, &root);
 
 release_firmware:
@@ -437,6 +454,88 @@ release_firmware:
 	return err;
 }
 EXPORT_SYMBOL_GPL(al5_codec_set_firmware);
+
+int al5_setup_dma(struct al5_codec_desc *codec)
+{
+	/* If there is a memory-region phandle, we use that memory to allocate our dma buffers
+	 * and if the hw ip supports it, we start the hw ip bus address range at the first address
+	 * of that memory.
+	 * Else, we use the CMA memory.
+	 * If we use the CMA memory, we cannot know where the cma memory region is starting here.
+	 * We use the first allocation (the icache buffer) to know the msb of the zone.
+	 * This means that only 4G aligned zone are supported.
+	 */
+
+	int err = -EINVAL;
+	struct device_node *np =
+		of_parse_phandle(codec->device->of_node, "memory-region", 0);
+
+	if (np) {
+		struct resource r;
+		/* The ip only supports a 4G range */
+		u64 const max_mem_range = (u64)1 << 32;
+		resource_size_t mem_range;
+
+		err = of_reserved_mem_device_init(codec->device);
+		if (err) {
+			dev_err(codec->device, "Couldn't get reserved memory (errno: %d)",
+				err);
+			goto out;
+		}
+
+		if (dma_set_mask_and_coherent(codec->device, DMA_BIT_MASK(64))) {
+			err = -EINVAL;
+			dev_warn(codec->device, "No suitable DMA available");
+			goto out;
+		}
+
+		err = of_address_to_resource(np, 0, &r);
+		if (err) {
+			dev_err(codec->device,
+				"Failed to parse the memory-region resources");
+			goto out_free_node;
+		}
+
+		mem_range = r.end - r.start;
+
+		if (mem_range > max_mem_range) {
+			err = -EINVAL;
+			dev_err(codec->device,
+				"The memory size is too big, it should be less than 4G");
+			goto out_free_node;
+		}
+
+#ifdef CONFIG_MEMORY_HOTPLUG
+		/* Hotplug requires 0x40000000 alignment so round to nearest multiple */
+		if (resource_size(&mem_res) % HOTPLUG_ALIGN)
+			pgtable_padding = HOTPLUG_ALIGN -
+						(resource_size(&mem_res) %
+						HOTPLUG_ALIGN);
+		else
+			pgtable_padding = 0;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+			add_memory(0, mem_res.start, resource_size(&mem_res) +
+					pgtable_padding, MHP_NONE);
+#else
+			add_memory(0, mem_res.start, resource_size(&mem_res) +
+					pgtable_padding);
+#endif
+#endif
+
+	}
+
+	err = 0;
+out_free_node:
+	codec->mem_offset = mem_res.start;
+	al5_writel(codec->mem_offset >> 32, AXI_ADDR_OFFSET_IP);
+
+	of_node_put(np);
+out:
+	return err;
+}
+
+
 
 int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		     size_t max_users_nb)
@@ -486,51 +585,9 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		goto fail;
 	}
 
-	mem_node = of_parse_phandle(pdev->dev.of_node, "memory-region", 0);
-	if (mem_node) {
-		err = of_address_to_resource(mem_node, 0, &mem_res);
-
-		if (!err) {
-			err = of_reserved_mem_device_init(&pdev->dev);
-			if (err)
-				dev_err(&pdev->dev,
-					"Failed to get shared dma pool with error : %d\n",
-					err);
-			else {
-				dev_dbg(&pdev->dev,
-					"Using shared dma pool for allocation\n");
-				err =
-					dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(
-									  64));
-				if (err) {
-					dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n",
-						err);
-					goto fail_mem;
-				}
-
-#ifdef CONFIG_MEMORY_HOTPLUG
-				/* Hotplug requires 0x40000000 alignment so round to nearest multiple */
-				if (resource_size(&mem_res) % HOTPLUG_ALIGN)
-					pgtable_padding = HOTPLUG_ALIGN -
-							  (resource_size(&mem_res) %
-							   HOTPLUG_ALIGN);
-				else
-					pgtable_padding = 0;
-
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-				add_memory(0, mem_res.start, resource_size(&mem_res) +
-					   pgtable_padding, MHP_NONE);
-#else
-				add_memory(0, mem_res.start, resource_size(&mem_res) +
-					   pgtable_padding);
-#endif
-#endif
-			}
-			codec->mem_offset = mem_res.start;
-			al5_writel(codec->mem_offset >> 32, AXI_ADDR_OFFSET_IP);
-		}
-	}
-	of_node_put(mem_node);
+	err = al5_setup_dma(codec);
+	if (err)
+		goto fail_mem;
 
 	config.cmd_base = (unsigned long)codec->regs + MAILBOX_CMD;
 	config.cmd_size = MAILBOX_SIZE;
