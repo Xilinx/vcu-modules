@@ -442,46 +442,47 @@ unlock:
 
 int al5e_user_get(struct al5_user *user, struct al5_params *msg)
 {
-       struct al5_mail *feedback;
-       int err;
+	struct al5_mail *feedback;
+	int err;
 
-       err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
+	err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 
-       if (err == -EINTR)
-               return err;
+	if (err == -EINTR)
+		return err;
 
 
-       err = al5_check_and_send(user, al5e_get_msg(user->uid, msg));
+	err = al5_check_and_send(user, al5e_get_msg(user->uid, msg));
 
-       if (err)
-               goto unlock;
+	if (err)
+		goto unlock;
 
-       err = al5_queue_pop_timeout(&feedback,
-                       &user->queues[AL5_USER_MAIL_GET]);
+	err = al5_queue_pop_timeout(&feedback,
+				    &user->queues[AL5_USER_MAIL_GET]);
 
-       if (err)
-               goto unlock;
+	if (err)
+		goto unlock;
 
-       memcpy(msg->opaque, al5_mail_get_body(feedback) + sizeof(user->uid), msg->size);
-       al5_free_mail(feedback);
-       mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
-       return 0;
+	memcpy(msg->opaque, al5_mail_get_body(feedback) + sizeof(user->uid), msg->size);
+	al5_free_mail(feedback);
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
+	return 0;
 unlock:
-       dev_err(user->device, "Getter failed.");
-       mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
-       return err;
+	dev_err(user->device, "Getter failed.");
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
+	return err;
 }
 
 int al5e_user_set(struct al5_user *user, struct al5_params *msg)
 {
-       int err;
+	int err;
 
-       err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
+	err = mutex_lock_killable(&user->locks[AL5_USER_CHANNEL]);
 
-       if (err == -EINTR)
-               return err;
+	if (err == -EINTR)
+		return err;
 
-       err = al5_check_and_send(user, al5e_set_msg(user->chan_uid, msg));
-       mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
-       return err;
+	err = al5_check_and_send(user, al5e_set_msg(user->chan_uid, msg));
+	mutex_unlock(&user->locks[AL5_USER_CHANNEL]);
+	return err;
 }
+

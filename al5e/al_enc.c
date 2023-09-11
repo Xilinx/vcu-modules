@@ -174,7 +174,6 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 	case GET_DMA_FD:
 		ret = al5_ioctl_get_dma_fd(codec->device, arg);
 		return ret;
-
 	case GET_DMA_PHY:
 		ret = al5_ioctl_get_dmabuf_dma_addr(codec->device, arg);
 		return ret;

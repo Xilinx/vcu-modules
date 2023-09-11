@@ -234,7 +234,7 @@ int al5d_user_get(struct al5_user *user, struct al5_params *msg)
 		goto unlock;
 
 	err = al5_queue_pop_timeout(&feedback,
-			&user->queues[AL5_USER_MAIL_GET]);
+				    &user->queues[AL5_USER_MAIL_GET]);
 
 	if (err)
 		goto unlock;

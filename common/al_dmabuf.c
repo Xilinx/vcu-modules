@@ -58,6 +58,7 @@ static int al5_dmabuf_attach(struct dma_buf *dbuf, struct device *dev,
 #endif
 {
 	struct al5_dmabuf_priv *dinfo = dbuf->priv;
+
 	struct al5_dmabuf_attachment *attach;
 
 	struct scatterlist *rd, *wr;
