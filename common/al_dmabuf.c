@@ -32,6 +32,7 @@ MODULE_LICENSE("GPL v2");
 MODULE_AUTHOR("Kevin Grandemange");
 MODULE_AUTHOR("Sebastien Alaiwan");
 MODULE_AUTHOR("Antoine Gruzelle");
+MODULE_AUTHOR("Arthur Vinchon");
 MODULE_DESCRIPTION("Allegro Common");
 
 struct al5_dmabuf_priv {
@@ -286,7 +287,8 @@ static struct sg_table *al5_get_base_sgt(struct al5_dmabuf_priv *dinfo)
 static struct dma_buf *al5_get_dmabuf(void *dma_info_priv)
 {
 	struct dma_buf *dbuf;
-	struct dma_buf_export_info exp_info;
+
+	DEFINE_DMA_BUF_EXPORT_INFO(exp_info);
 
 	struct al5_dmabuf_priv *dinfo = dma_info_priv;
 
