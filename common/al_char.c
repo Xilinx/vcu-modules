@@ -37,27 +37,25 @@ int al5_setup_chrdev_region(int *major, int base_minor, int nb_devs, char *desc)
 }
 EXPORT_SYMBOL_GPL(al5_setup_chrdev_region);
 
-int al5_setup_codec_cdev(struct al5_codec_desc *codec,
-			 const struct file_operations *fops,
-			 struct module *owner, int major, int minor)
+int al5_setup_cdev(struct cdev *cdev, const struct file_operations *fops,
+		   struct module *owner, int major, int minor)
 {
 	int err, devno = MKDEV(major, minor);
 
-	cdev_init(&codec->cdev, fops);
-	codec->cdev.owner = owner;
-	err = cdev_add(&codec->cdev, devno, 1);
-	if (err) {
-		al5_err("Error %d adding allegro device number %d", err, minor);
+	cdev_init(cdev, fops);
+	cdev->owner = owner;
+	err = cdev_add(cdev, devno, 1);
+	if (err)
 		return err;
-	}
+
 	return 0;
 }
-EXPORT_SYMBOL_GPL(al5_setup_codec_cdev);
+EXPORT_SYMBOL_GPL(al5_setup_cdev);
 
-void al5_clean_up_codec_cdev(struct al5_codec_desc *codec)
+void al5_clean_up_cdev(struct cdev *cdev)
 {
-	cdev_del(&codec->cdev);
+	cdev_del(cdev);
 }
-EXPORT_SYMBOL_GPL(al5_clean_up_codec_cdev);
+EXPORT_SYMBOL_GPL(al5_clean_up_cdev);
 
 

@@ -234,9 +234,9 @@ static int al5d_setup_codec_cdev(struct al5_codec_desc *codec, int minor)
 	const char *device_name = "allegroDecodeIP";
 	dev_t dev = MKDEV(al5d_codec_major, minor);
 
-	int err = al5_setup_codec_cdev(codec, &al5d_fops, THIS_MODULE,
-				       al5d_codec_major,
-				       minor);
+	int err = al5_setup_cdev(&codec->cdev, &al5d_fops, THIS_MODULE,
+				 al5d_codec_major,
+				 minor);
 
 	if (err)
 		return err;
@@ -246,7 +246,7 @@ static int al5d_setup_codec_cdev(struct al5_codec_desc *codec, int minor)
 	device = device_create(module_class, NULL, dev, NULL, device_name);
 	if (IS_ERR(device)) {
 		pr_err("device not created\n");
-		al5_clean_up_codec_cdev(codec);
+		al5_clean_up_cdev(&codec->cdev);
 		return PTR_ERR(device);
 	}
 
@@ -305,7 +305,7 @@ static int al5d_codec_remove(struct platform_device *pdev)
 
 	al5_codec_tear_down(codec);
 	device_destroy(module_class, dev);
-	al5_clean_up_codec_cdev(codec);
+	al5_clean_up_cdev(&codec->cdev);
 
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 15, 0)
 	xil_clk_clean_up(pdev, codec);
