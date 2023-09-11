@@ -65,6 +65,8 @@ struct al5_dma_buffer *al5_alloc_dma(struct device *dev, size_t size)
 	   Retry the allocation with size + PAGE_SIZE and if we get lsb == 0 again, add a one page
 	   offset to the start of the buffer */
 	dma_free_coherent(dev, buf->size, buf->cpu_handle, buf->dma_handle);
+	kfree(buf);
+
 	buf = al5_alloc_dma_(dev, size + PAGE_SIZE);
 	if (!buf)
 		return NULL;

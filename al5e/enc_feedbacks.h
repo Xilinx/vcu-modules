@@ -21,11 +21,11 @@
 #include <linux/types.h>
 
 struct al5_channel_buffers {
-	__u32 int_buffers_count;
-	__u32 int_buffers_size;
-	__u32 rec_buffers_count;
-	__u32 rec_buffers_size;
-	__u32 reserved;
+	__s32 int_buffers_count;
+	__s32 int_buffers_size;
+	__s32 rec_buffers_count;
+	__s32 rec_buffers_size;
+	__s32 reserved;
 };
 
 struct al5e_feedback_channel {
