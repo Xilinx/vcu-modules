@@ -32,4 +32,7 @@ struct al5_mail *al5e_create_channel_param_msg(u32 user_uid,
 					       u32 mcu_rc_plugin_addr,
 					       u32 mcu_rc_plugin_size);
 
+struct al5_mail *al5e_get_msg(u32 user_uid, struct al5_params *msg);
+struct al5_mail *al5e_set_msg(u32 user_uid, struct al5_params *msg);
+
 #endif /* _MCU_ENC_H_ */

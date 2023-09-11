@@ -105,7 +105,7 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 
 	switch (cmd) {
 		struct al5_config_channel config_channel;
-		struct al5_params encode_status;
+		struct al5_params params;
 		struct al5_encode_msg encode_msg;
 		struct al5_reconstructed_info rec_msg;
 		struct al5_buffer buffer_msg;
@@ -122,27 +122,24 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 			return -EFAULT;
 		ioctl_info("end AL_MCU_CONFIG_CHANNEL for user %i", user->uid);
 		return ret;
-
 	case AL_MCU_DESTROY_CHANNEL:
 		ioctl_info("ioctl AL_MCU_DESTROY_CHANNEL from user %i",
 			   user->uid);
 		ret = al5_user_destroy_channel(user, false);
 		ioctl_info("end AL_MCU_DESTROY_CHANNEL for user %i", user->uid);
 		return ret;
-
 	case AL_MCU_WAIT_FOR_STATUS:
 		ioctl_info("ioctl AL_MCU_WAIT_FOR_STATUS from user %i",
 			   user->uid);
-		if (copy_from_user(&encode_status, (void *)arg,
-				   sizeof(encode_status)))
+		if (copy_from_user(&params, (void *)arg,
+				   sizeof(params)))
 			return -EFAULT;
-		ret = al5e_user_wait_for_status(user, &encode_status);
-		if (copy_to_user((void *)arg, &encode_status,
-				 sizeof(encode_status)))
+		ret = al5e_user_wait_for_status(user, &params);
+		if (copy_to_user((void *)arg, &params,
+				 sizeof(params)))
 			return -EFAULT;
 		ioctl_info("end AL_MCU_WAIT_FOR_STATUS for user %i", user->uid);
 		return ret;
-
 	case AL_MCU_ENCODE_ONE_FRM:
 		ioctl_info("ioctl AL_MCU_ENCODE_ONE_FRM from user %i",
 			   user->uid);
@@ -154,7 +151,6 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 			return -EFAULT;
 		ioctl_info("end AL_MCU_ENCODE_ONE_FRM for user %i", user->uid);
 		return ret;
-
 	case AL_MCU_GET_REC_PICTURE:
 		ioctl_info("ioctl AL_MCU_GET_REC from user %i", user->uid);
 		if (copy_from_user(&rec_msg, (void *)arg, sizeof(rec_msg)))
@@ -164,20 +160,17 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 			return -EFAULT;
 		ioctl_info("end AL_MCU_GET_REC for user %i", user->uid);
 		return ret;
-
 	case AL_MCU_RELEASE_REC_PICTURE:
 		ioctl_info("ioctl AL_MCU_GET_REC from user %i", user->uid);
 		if (copy_from_user(&rec_fd, (void *)arg, sizeof(rec_fd)))
 			return -EFAULT;
-		return al5e_user_release_rec(user, rec_fd);
 		ioctl_info("end AL_MCU_GET_REC from user %i", user->uid);
-
+		return al5e_user_release_rec(user, rec_fd);
 	case AL_MCU_PUT_STREAM_BUFFER:
 		if (copy_from_user(&buffer_msg, (void *)arg,
 				   sizeof(buffer_msg)))
 			return -EFAULT;
 		return al5e_user_put_stream_buffer(user, &buffer_msg);
-
 	case GET_DMA_FD:
 		ret = al5_ioctl_get_dma_fd(codec->device, arg);
 		return ret;
@@ -185,7 +178,20 @@ static long al5e_ioctl(struct file *filp, unsigned int cmd,
 	case GET_DMA_PHY:
 		ret = al5_ioctl_get_dmabuf_dma_addr(codec->device, arg);
 		return ret;
-
+	case AL_MCU_GET:
+		if (copy_from_user(&params, (void *)arg, sizeof(params)))
+			return -EFAULT;
+		ret = al5e_user_get(user, &params);
+		if (copy_to_user((void *)arg, &params, sizeof(params)))
+			return -EFAULT;
+		return ret;
+	case AL_MCU_SET:
+		if (copy_from_user(&params, (void *)arg, sizeof(params)))
+			return -EFAULT;
+		ret = al5e_user_set(user, &params);
+		if (copy_to_user((void *)arg, &params, sizeof(params)))
+			return -EFAULT;
+		return ret;
 	default:
 		return ioctl_usage(user, cmd);
 	}

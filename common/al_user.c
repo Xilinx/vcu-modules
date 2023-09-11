@@ -39,6 +39,8 @@ static int mail_to_queue(int mail_uid)
 		return AL5_USER_MAIL_REC;
 	case AL_MCU_MSG_GET:
 		return AL5_USER_MAIL_GET;
+	case AL_MCU_MSG_SET:
+		return AL5_USER_MAIL_SET;
 	default:
 		return AL5_USER_MAIL_DEBUG;
 	}
@@ -87,6 +89,7 @@ static void user_queues_unlock(struct al5_user *user)
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_CREATE]);
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_REC]);
 	al5_queue_unlock(&user->queues[AL5_USER_MAIL_GET]);
+	al5_queue_unlock(&user->queues[AL5_USER_MAIL_SET]);
 }
 
 static void user_queues_lock(struct al5_user *user)
@@ -96,6 +99,7 @@ static void user_queues_lock(struct al5_user *user)
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_CREATE]);
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_REC]);
 	al5_queue_lock(&user->queues[AL5_USER_MAIL_GET]);
+	al5_queue_lock(&user->queues[AL5_USER_MAIL_SET]);
 }
 
 void al5_user_remove_residual_messages(struct al5_user *user)

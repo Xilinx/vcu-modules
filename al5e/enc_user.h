@@ -31,3 +31,5 @@ int al5e_user_put_stream_buffer(struct al5_user *user,
 int al5e_user_release_rec(struct al5_user *user, u32 fd);
 int al5e_user_get_rec(struct al5_user *user,
 		      struct al5_reconstructed_info *msg);
+int al5e_user_get(struct al5_user *user, struct al5_params *msg);
+int al5e_user_set(struct al5_user *user, struct al5_params *msg);

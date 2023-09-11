@@ -31,6 +31,8 @@
 #define AL_MCU_GET_REC_PICTURE _IOWR('q', 23, struct al5_reconstructed_info)
 #define AL_MCU_RELEASE_REC_PICTURE _IOWR('q', 24, __u32)
 
+#define AL_MCU_GET _IOWR('q', 27, struct al5_params)
+#define AL_MCU_SET _IOWR('q', 28, struct al5_params)
 
 struct al5_reconstructed_info {
 	__u32 fd;
@@ -40,9 +42,10 @@ struct al5_reconstructed_info {
 	__u32 height;
 };
 
+#define OPAQUE_SIZE 128
 struct al5_params {
 	__u32 size;
-	__u32 opaque_params[128];
+	__u32 opaque[OPAQUE_SIZE];
 };
 
 struct al5_channel_status {

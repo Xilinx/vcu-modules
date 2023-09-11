@@ -37,6 +37,7 @@ enum user_mail {
 	AL5_USER_MAIL_DEBUG,
 	AL5_USER_MAIL_REC,
 	AL5_USER_MAIL_GET,
+	AL5_USER_MAIL_SET,
 
 	/* always the last one */
 	AL5_USER_MAIL_NUMBER,
