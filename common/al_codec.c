@@ -514,12 +514,24 @@ int al5_setup_dma(struct al5_codec_desc *codec)
 		else
 			pgtable_padding = 0;
 
+		nid = memory_add_physaddr_to_nid(mem_res.start);
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-			add_memory(0, mem_res.start, resource_size(&mem_res) +
+		err = add_memory(nid, mem_res.start, resource_size(&mem_res) +
 					pgtable_padding, MHP_NONE);
+
+		/* Ignore EEXIST error*/
+		if(err < 0 && err != -EEXIST){
+			dev_err(codec->device, "Failed to add memory: %d\n", err);
+			goto fail_mem;
+		}
 #else
-			add_memory(0, mem_res.start, resource_size(&mem_res) +
-					pgtable_padding);
+		err = add_memory(nid, mem_res.start, resource_size(&mem_res) +
+									 pgtable_padding);
+		/* Ignore EEXIST error*/
+		if(err < 0 && err != -EEXIST){
+			dev_err(codec->device, "Failed to add memory: %d\n", err);
+			goto fail_mem;
+		}
 #endif
 #endif
 
@@ -550,6 +562,7 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 
 #ifdef CONFIG_MEMORY_HOTPLUG
 	unsigned long pgtable_padding;
+	int nid;
 #endif
 
 	codec->device = &pdev->dev;
