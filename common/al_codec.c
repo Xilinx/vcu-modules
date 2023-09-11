@@ -434,17 +434,6 @@ int al5_codec_set_firmware(struct al5_codec_desc *codec, char *fw_file,
 		stop_mcu(codec);
 		goto release_firmware;
 	}
-	err = of_reserved_mem_device_init(&pdev->dev);
-	if (err) {
-		dev_err(&pdev->dev, "Failed to get shared dma pool with error : %d\n", err);
-	} else {
-		dev_dbg(&pdev->dev, "Using shared dma pool for allocation\n");
-		err = dma_set_coherent_mask(&pdev->dev, DMA_BIT_MASK(64));
-		if (err) {
-			dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n", err);
-			goto fail;
-		}
-	}
 
 	al5_group_unbind_user(&codec->users_group, &root);
 
@@ -483,7 +472,7 @@ int al5_setup_dma(struct al5_codec_desc *codec)
 			goto out;
 		}
 
-		if (dma_set_mask_and_coherent(codec->device, DMA_BIT_MASK(64))) {
+		if (dma_set_coherent_mask(codec->device, DMA_BIT_MASK(64))) {
 			err = -EINVAL;
 			dev_warn(codec->device, "No suitable DMA available");
 			goto out;
@@ -504,49 +493,14 @@ int al5_setup_dma(struct al5_codec_desc *codec)
 				"The memory size is too big, it should be less than 4G");
 			goto out_free_node;
 		}
-
-#ifdef CONFIG_MEMORY_HOTPLUG
-		/* Hotplug requires 0x40000000 alignment so round to nearest multiple */
-		if (resource_size(&mem_res) % HOTPLUG_ALIGN)
-			pgtable_padding = HOTPLUG_ALIGN -
-						(resource_size(&mem_res) %
-						HOTPLUG_ALIGN);
-		else
-			pgtable_padding = 0;
-
-		nid = memory_add_physaddr_to_nid(mem_res.start);
-#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
-		err = add_memory(nid, mem_res.start, resource_size(&mem_res) +
-					pgtable_padding, MHP_NONE);
-
-		/* Ignore EEXIST error*/
-		if(err < 0 && err != -EEXIST){
-			dev_err(codec->device, "Failed to add memory: %d\n", err);
-			goto fail_mem;
-		}
-#else
-		err = add_memory(nid, mem_res.start, resource_size(&mem_res) +
-									 pgtable_padding);
-		/* Ignore EEXIST error*/
-		if(err < 0 && err != -EEXIST){
-			dev_err(codec->device, "Failed to add memory: %d\n", err);
-			goto fail_mem;
-		}
-#endif
-#endif
-
 	}
 
 	err = 0;
 out_free_node:
-	codec->mem_offset = mem_res.start;
-	al5_writel(codec->mem_offset >> 32, AXI_ADDR_OFFSET_IP);
-
 	of_node_put(np);
 out:
 	return err;
 }
-
 
 
 int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
@@ -584,6 +538,10 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		goto fail;
 	}
 
+	err = al5_setup_dma(codec);
+	if (err)
+		goto fail_mem;
+
 #if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
 	codec->regs = devm_ioremap(&pdev->dev, res->start, resource_size(res));
 #else
@@ -598,9 +556,66 @@ int al5_codec_set_up(struct al5_codec_desc *codec, struct platform_device *pdev,
 		goto fail;
 	}
 
-	err = al5_setup_dma(codec);
-	if (err)
-		goto fail_mem;
+	mem_node = of_parse_phandle(pdev->dev.of_node, "memory-region", 0);
+	if (mem_node) {
+		err = of_address_to_resource(mem_node, 0, &mem_res);
+
+		if (!err) {
+			err = of_reserved_mem_device_init(&pdev->dev);
+			if (err)
+				dev_err(&pdev->dev,
+					"Failed to get shared dma pool with error : %d\n",
+					err);
+			else {
+				dev_dbg(&pdev->dev,
+					"Using shared dma pool for allocation\n");
+				err =
+					dma_set_mask_and_coherent(&pdev->dev, DMA_BIT_MASK(
+									  64));
+				if (err) {
+					dev_err(&pdev->dev, "dma_set_coherent_mask: %d\n",
+						err);
+					goto fail_mem;
+				}
+
+#ifdef CONFIG_MEMORY_HOTPLUG
+
+				/* Hotplug requires 0x40000000 alignment so round to nearest multiple */
+				if (resource_size(&mem_res) % HOTPLUG_ALIGN)
+					pgtable_padding = HOTPLUG_ALIGN -
+							  (resource_size(&mem_res) %
+							   HOTPLUG_ALIGN);
+
+				else
+					pgtable_padding = 0;
+
+				nid = memory_add_physaddr_to_nid(mem_res.start);
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 10, 0)
+				err = add_memory(nid, mem_res.start, resource_size(&mem_res) +
+					   pgtable_padding, MHP_NONE);
+
+				/* Ignore EEXIST error : memory already regisred as System RAM */
+				if(err > 0 && err != -EEXIST){
+					dev_err(codec->device, "Failed to add memory: %d\n", err);
+					goto fail_mem;
+				}
+#else
+				err = add_memory(nid, mem_res.start, resource_size(&mem_res) +
+					   pgtable_padding);
+
+				if(err < 0 && err != -EEXIST){
+					dev_err(codec->device, "Failed to add memory: %d\n", err);
+					goto fail_mem;
+				}
+
+#endif
+#endif
+			}
+			codec->mem_offset = mem_res.start;
+			al5_writel(codec->mem_offset >> 32, AXI_ADDR_OFFSET_IP);
+		}
+	}
+	of_node_put(mem_node);
 
 	config.cmd_base = (unsigned long)codec->regs + MAILBOX_CMD;
 	config.cmd_size = MAILBOX_SIZE;
