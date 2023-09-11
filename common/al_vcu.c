@@ -19,8 +19,7 @@
 #include "al_vcu.h"
 #include "al_codec.h"
 #include "al_group.h"
-
-#define AL5_MCU_IRQ_STA 0x910C
+#include "al_constants.h"
 
 irqreturn_t al5_hardirq_handler(int irq, void *data)
 {
@@ -34,6 +33,7 @@ irqreturn_t al5_hardirq_handler(int irq, void *data)
 
 	/* wait for the interrupt acknowledgment to propagate in the hw */
 	al5_readl(AL5_MCU_IRQ_STA);
+
 
 	return IRQ_WAKE_THREAD;
 }

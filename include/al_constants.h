@@ -42,6 +42,7 @@
 #define AL5_MCU_INTERRUPT               0x9100
 #define AL5_MCU_INTERRUPT_MASK          0x9104
 #define AL5_MCU_INTERRUPT_CLR           0x9108
+#define AL5_MCU_IRQ_STA                 0x910C
 
 #define AXI_ADDR_OFFSET_IP              0x9208
 
