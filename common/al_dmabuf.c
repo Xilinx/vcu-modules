@@ -119,6 +119,16 @@ static struct sg_table *al5_dmabuf_map(struct dma_buf_attachment *db_attach,
 {
 	struct al5_dmabuf_attachment *attach = db_attach->priv;
 	struct sg_table *sgt;
+
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 2, 0)
+	sgt = &attach->sgt;
+
+	if (attach->dma_dir == dma_dir) {
+		return sgt;
+	}
+
+	attach->dma_dir = dma_dir;
+#else
 	struct mutex *lock = &db_attach->dmabuf->lock;
 
 	mutex_lock(lock);
@@ -134,6 +144,7 @@ static struct sg_table *al5_dmabuf_map(struct dma_buf_attachment *db_attach,
 
 	mutex_unlock(lock);
 
+#endif
 	return sgt;
 }
 
@@ -165,7 +176,11 @@ static int al5_dmabuf_mmap(struct dma_buf *buf, struct vm_area_struct *vma)
 		return ret;
 	}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 3, 0)
+	vm_flags_set(vma, VM_DONTEXPAND | VM_DONTDUMP);
+#else
 	vma->vm_flags |= VM_DONTEXPAND | VM_DONTDUMP;
+#endif
 
 	return 0;
 }

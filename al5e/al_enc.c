@@ -315,7 +315,11 @@ static int setup_chrdev_region(void)
 
 static int create_module_class(void)
 {
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+	module_class = class_create("allegro_encode_class");
+#else
 	module_class = class_create(THIS_MODULE, "allegro_encode_class");
+#endif
 	if (IS_ERR(module_class))
 		return PTR_ERR(module_class);
 

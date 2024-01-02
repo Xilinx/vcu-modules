@@ -340,7 +340,11 @@ static int __init dma_proxy_init(void)
 		return ret;
 	}
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 4, 0)
+	dmaproxy_cl = class_create("char");
+#else
 	dmaproxy_cl = class_create(THIS_MODULE, "char");
+#endif
 	if (IS_ERR(dmaproxy_cl)) {
 		cdev_del(&dmaproxy_cdev);
 		unregister_chrdev_region(dmaproxy_dev, MINOR_CNT);
