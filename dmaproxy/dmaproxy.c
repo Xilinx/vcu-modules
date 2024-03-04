@@ -236,7 +236,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data, dmaproxy_arg_t 
 	um->addr[1] = dma_map_page(dma_dev->dev, phys_to_page(dmaproxy_data->dst_buf),
 				   offset_in_page(
 					   dmaproxy_data->dst_buf), um->len,
-				   DMA_BIDIRECTIONAL);
+				   DMA_TO_DEVICE);
 	ret = dma_mapping_error(dma_dev->dev, um->addr[1]);
 	if (ret) {
 		pr_err("dmaproxy: dma map error for destination buffer\n");
