@@ -274,8 +274,11 @@ static int al5e_probe(struct platform_device *pdev)
 
 	return 0;
 }
-
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
+static void al5e_remove(struct platform_device *pdev)
+#else
 static int al5e_remove(struct platform_device *pdev)
+#endif
 {
 	struct al5_codec_desc *codec = platform_get_drvdata(pdev);
 	dev_t dev = MKDEV(al5e_codec_major, codec->minor);
@@ -288,7 +291,11 @@ static int al5e_remove(struct platform_device *pdev)
 	xil_clk_clean_up(pdev, codec);
 #endif
 
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(6, 11, 0)
+	return;
+#else
 	return 0;
+#endif
 }
 
 static const struct of_device_id al5e_of_match[] = {
