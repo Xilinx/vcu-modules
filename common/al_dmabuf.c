@@ -24,7 +24,9 @@
 #include <linux/module.h>
 #include <linux/slab.h>
 
-#if LINUX_VERSION_CODE > KERNEL_VERSION(5, 15, 0)
+#if LINUX_VERSION_CODE > KERNEL_VERSION(6, 13, 0)
+MODULE_IMPORT_NS("DMA_BUF");
+#elif LINUX_VERSION_CODE > KERNEL_VERSION(5, 15, 0)
 MODULE_IMPORT_NS(DMA_BUF);
 #endif
 
