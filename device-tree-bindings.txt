@@ -1,11 +1,26 @@
-al5e, al5d:
+Allegro al5{d,e} video codec driver
 
-al,mcu_ext_mem_size: specifies the size of the external memory of the mcu. default is MCU_SUBALLOCATOR_SIZE
+Required Properties:
+- compatible: "al,al5d" or "al,al5e"
+- reg: Address range of the codec IP registers
+- interrupt-parent: The phandle for the interrupt controller
+- interrupts: Should contain interrupt for codec IP
 
-memory-region: a phandle that points to a reserved-memory node. The driver will use the reserved memory instead of using the CMA pools to allocate its memory. It will also configure the hw ip if needed so that the ip can access the allocated memory. (See https://xilinx-wiki.atlassian.net/wiki/spaces/A/pages/18841683/Linux+Reserved+Memory for more information)
+Optional Properties:
+- al,devicename: specifies the /dev/X name the created device should have.
+                 default is /dev/allegroIP for al5e and /dev/allegroDecodeIP for al5d
+- al,mcu_ext_mem_size: specifies the size in bytes of the external memory of the mcu.
+                       default is MCU_SUBALLOCATOR_SIZE.
 
-al,devicename: specifies the /dev/X name the created device should have. default is /dev/allegroIP for al5e and /dev/allegroDecodeIP for al5d
+Here is an al5d device tree example in action
 
-al5r:
+Example:
 
-al,devicename: specifies the /dev/X name the created device should have. default is that the /dev/X node isn't created
+al5d@a0120000 {
+	compatible = "al,al5d-1.2", "al,al5d";
+	interrupt-parent = <0x4>;
+	interrupts = <0x0 0x59 0x4>;
+	reg = <0x0 0xa0120000 0x0 0x10000>;
+	al,mcu_ext_mem_size = 2097152; // 2MB instead of 32MB because you determined that you specific usecase doesn't need more memory for example
+};
+

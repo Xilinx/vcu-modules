@@ -1,0 +1,3 @@
+obj-m += al5e.o
+
+al5e-y := al_enc.o enc_user.o enc_mails_factory.o
