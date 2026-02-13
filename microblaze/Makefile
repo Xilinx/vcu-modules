@@ -1,16 +1,25 @@
-KDIR ?= /lib/modules/$(shell uname -r)/build
-SRC  := $(shell pwd)
+SRC := $(shell pwd)
 
-obj-m += common/
-obj-m += al5e/
-obj-m += al5d/
-obj-m += dmaproxy/
+ifeq ($(O),)
+	include $(KERNEL_SRC)/.config
+else
+	include $(O)/.config
+endif
+
+obj-m	+= common/
+obj-m	+= al5e/
+obj-m	+= al5d/
+obj-m	+= dmaproxy/
 
 all:
-	$(MAKE) -C $(KDIR) M=$(SRC) O=$(O) modules
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) O=$(O) modules
 
 modules_install:
-	$(MAKE) -C $(KDIR) M=$(SRC) O=$(O) modules_install
+	$(MAKE) -C $(KERNEL_SRC) M=$(SRC) modules_install
 
 clean:
-	$(MAKE) -C $(KDIR) M=$(SRC) O=$(O) clean
+	rm -f *.o *~ core .depend .*.cmd *.ko *.mod.c
+	rm -f Module.markers Module.symvers modules.order modules.builtin
+	rm -f */*.ko */*.mod.c */.*.mod.c */.*.cmd */*.o
+	rm -f */modules.order */modules.builtin
+	rm -rf .tmp_versions Modules.symvers
