@@ -159,6 +159,20 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 		goto fail_align;
 	}
 
+	if (dmaproxy.src_offset < 0 ||
+	    (size_t)dmaproxy.src_offset + dmaproxy.size > dmaproxy_data->src_dbuf->size) {
+		pr_err("dmaproxy: src_offset out of bounds\n");
+		goto fail_align;
+	}
+
+	if (dmaproxy.dst_offset < 0 ||
+	    (size_t)dmaproxy.dst_offset + dmaproxy.size >
+	    (dmaproxy.dst_fd == dmaproxy.src_fd ? dmaproxy_data->src_dbuf->size
+					       : dmaproxy_data->dst_dbuf->size)) {
+		pr_err("dmaproxy: dst_offset out of bounds\n");
+		goto fail_align;
+	}
+
 	dmaproxy_data->src_buf = dmaproxy_data->src_buf + dmaproxy.src_offset;
 	dmaproxy_data->dst_buf = dmaproxy_data->dst_buf + dmaproxy.dst_offset;
 
