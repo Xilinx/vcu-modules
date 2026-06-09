@@ -427,7 +427,7 @@ release_firmware:
 }
 EXPORT_SYMBOL_GPL(al5_codec_set_firmware);
 
-int al5_setup_dma(struct al5_codec_desc *codec)
+static int al5_setup_dma(struct al5_codec_desc *codec)
 {
 	/* If there is a memory-region phandle, we use that memory to allocate our dma buffers
 	 * and if the hw ip supports it, we start the hw ip bus address range at the first address

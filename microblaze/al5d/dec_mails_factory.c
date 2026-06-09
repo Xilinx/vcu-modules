@@ -28,8 +28,8 @@ void al5d_mail_get_sc_status(struct al5_scstatus *scstatus,
 	memcpy(scstatus, mail->body + 4, sizeof(*scstatus));
 }
 
-void write_decode_mail(struct al5_mail *mail, u32 chan_uid,
-		       struct al5_decode_msg *msg)
+static void write_decode_mail(struct al5_mail *mail, u32 chan_uid,
+			      struct al5_decode_msg *msg)
 {
 	al5_mail_write_word(mail, chan_uid);
 	al5_mail_write(mail, msg->params.opaque, msg->params.size);
