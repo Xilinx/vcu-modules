@@ -4,6 +4,7 @@
 *
 ******************************************************************************/
 
+#include "al_char.h"
 #include "al_codec.h"
 
 int al5_setup_chrdev_region(int *major, int base_minor, int nb_devs, char *desc)
