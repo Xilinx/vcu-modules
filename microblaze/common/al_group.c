@@ -12,6 +12,7 @@
 #include "al_mail.h"
 #include "al_codec_mails.h"
 #include "al_constants.h"
+#include "al_user.h"
 
 void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu,
 		    int max_users_nb, struct device *device)
@@ -23,7 +24,6 @@ void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu,
 	group->device = device;
 }
 
-void al5_user_destroy_channel_resources(struct al5_user *user);
 void al5_group_deinit(struct al5_group *group)
 {
 	int i;

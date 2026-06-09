@@ -15,6 +15,7 @@
 #include "mcu_utils.h"
 #include "al_codec.h"
 #include "al_alloc.h"
+#include "al_user.h"
 #include "mcu_interface.h"
 
 #ifdef CONFIG_MEMORY_HOTPLUG
@@ -340,7 +341,6 @@ int al5_codec_open(struct inode *inode, struct file *filp)
 }
 EXPORT_SYMBOL_GPL(al5_codec_open);
 
-void al5_user_destroy_channel_resources(struct al5_user *user);
 int al5_codec_release(struct inode *inode, struct file *filp)
 {
 	struct al5_filp_data *private_data = filp->private_data;
