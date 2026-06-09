@@ -198,6 +198,7 @@ static void al5_dmabuf_release(struct dma_buf *buf)
 	kfree(dinfo);
 }
 
+#if LINUX_VERSION_CODE < KERNEL_VERSION(5, 8, 0)
 static void *al5_dmabuf_kmap(struct dma_buf *dmabuf, unsigned long page_num)
 {
 	struct al5_dmabuf_priv *dinfo = dmabuf->priv;
@@ -205,6 +206,7 @@ static void *al5_dmabuf_kmap(struct dma_buf *dmabuf, unsigned long page_num)
 
 	return vaddr + page_num * PAGE_SIZE;
 }
+#endif
 
 #if LINUX_VERSION_CODE > KERNEL_VERSION(5, 18, 0)
 static int al5_dmabuf_vmap(struct dma_buf *dbuf, struct iosys_map *map)

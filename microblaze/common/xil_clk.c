@@ -17,6 +17,7 @@
 #include <linux/regmap.h>
 #include <linux/clk.h>
 
+#include "xil_clk.h"
 #include "al_codec.h"
 
 #define VCU_PLL_CLK 0x34

@@ -15,7 +15,9 @@
 #include "mcu_utils.h"
 #include "al_codec.h"
 #include "al_alloc.h"
+#include "al_user.h"
 #include "mcu_interface.h"
+#include "l2_prefetch.h"
 
 #ifdef CONFIG_MEMORY_HOTPLUG
 #define HOTPLUG_ALIGN 0x40000000
@@ -183,11 +185,6 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 	return 0;
 }
 
-u32 get_l2_size_in_bits(void *);
-u32 get_l2_color_bitdepth(void *);
-u32 get_num_cores(void *);
-u32 get_core_frequency(void *);
-
 static void set_l2_info(struct device *dev, struct mcu_init_msg *init_msg)
 {
 	void *parent = dev_get_drvdata(dev->parent);
@@ -340,7 +337,6 @@ int al5_codec_open(struct inode *inode, struct file *filp)
 }
 EXPORT_SYMBOL_GPL(al5_codec_open);
 
-void al5_user_destroy_channel_resources(struct al5_user *user);
 int al5_codec_release(struct inode *inode, struct file *filp)
 {
 	struct al5_filp_data *private_data = filp->private_data;
@@ -427,7 +423,7 @@ release_firmware:
 }
 EXPORT_SYMBOL_GPL(al5_codec_set_firmware);
 
-int al5_setup_dma(struct al5_codec_desc *codec)
+static int al5_setup_dma(struct al5_codec_desc *codec)
 {
 	/* If there is a memory-region phandle, we use that memory to allocate our dma buffers
 	 * and if the hw ip supports it, we start the hw ip bus address range at the first address

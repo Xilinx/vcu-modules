@@ -12,6 +12,7 @@
 #include "al_mail.h"
 #include "al_codec_mails.h"
 #include "al_constants.h"
+#include "al_user.h"
 
 void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu,
 		    int max_users_nb, struct device *device)
@@ -23,7 +24,6 @@ void al5_group_init(struct al5_group *group, struct mcu_mailbox_interface *mcu,
 	group->device = device;
 }
 
-void al5_user_destroy_channel_resources(struct al5_user *user);
 void al5_group_deinit(struct al5_group *group)
 {
 	int i;
@@ -143,13 +143,13 @@ fail:
 	dev_err(group->device, "Couldn't destroy orphan mcu channel\n");
 }
 
-void print_cannot_retrieve_user(struct device *dev, u32 mail_uid)
+static void print_cannot_retrieve_user(struct device *dev, u32 mail_uid)
 {
 	dev_err(dev, "Mail of uid %d received related to inexistent user\n",
 		mail_uid);
 }
 
-bool should_destroy_channel_on_bad_feedback(u32 mail_uid)
+static bool should_destroy_channel_on_bad_feedback(u32 mail_uid)
 {
 	switch (mail_uid) {
 	case AL_MCU_MSG_INIT:
@@ -161,7 +161,7 @@ bool should_destroy_channel_on_bad_feedback(u32 mail_uid)
 	}
 }
 
-struct al5_user *retrieve_user(struct al5_group *group, struct al5_mail *mail)
+static struct al5_user *retrieve_user(struct al5_group *group, struct al5_mail *mail)
 {
 	struct al5_user *user;
 	int user_uid, chan_uid = BAD_CHAN;
@@ -189,7 +189,7 @@ struct al5_user *retrieve_user(struct al5_group *group, struct al5_mail *mail)
 /* return -1 if we failed to retrieve the user, -ENOMEM if there was a memory
  * shortage and 0 otherwise */
 #define AL_NO_USER -1
-int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
+static int try_to_deliver_to_user(struct al5_group *group, struct al5_mail *mail)
 {
 	struct al5_user *user;
 	int ret = AL_NO_USER;
@@ -217,7 +217,7 @@ unlock:
 	return ret;
 }
 
-void handle_mail(struct al5_group *group, struct al5_mail *mail)
+static void handle_mail(struct al5_group *group, struct al5_mail *mail)
 {
 	int error;
 	u32 mail_uid = al5_mail_get_uid(mail);
@@ -239,7 +239,7 @@ void handle_mail(struct al5_group *group, struct al5_mail *mail)
 			"Failed to deliver mail to the user (memory shortage). Skipping...\n");
 }
 
-void read_mail(struct al5_group *group)
+static void read_mail(struct al5_group *group)
 {
 	struct al5_mail *mail = al5_mcu_recv(group->mcu);
 

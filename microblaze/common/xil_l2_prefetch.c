@@ -13,6 +13,8 @@
 #include <soc/xilinx/xlnx_vcu.h>
 #endif
 
+#include "l2_prefetch.h"
+
 #define MEMORY_WORD_SIZE_IN_BITS 32
 
 u32 get_l2_color_bitdepth(void *parent)
