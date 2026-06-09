@@ -17,6 +17,7 @@
 #include "al_alloc.h"
 #include "al_user.h"
 #include "mcu_interface.h"
+#include "l2_prefetch.h"
 
 #ifdef CONFIG_MEMORY_HOTPLUG
 #define HOTPLUG_ALIGN 0x40000000
@@ -183,11 +184,6 @@ static int alloc_mcu_caches(struct al5_codec_desc *codec)
 
 	return 0;
 }
-
-u32 get_l2_size_in_bits(void *);
-u32 get_l2_color_bitdepth(void *);
-u32 get_num_cores(void *);
-u32 get_core_frequency(void *);
 
 static void set_l2_info(struct device *dev, struct mcu_init_msg *init_msg)
 {
