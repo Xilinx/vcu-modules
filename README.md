@@ -11,12 +11,13 @@ registers interface and make it possible to handle interrupts in userspace.
 ## Building
 
 To build drivers you need a linux kernel build tree. Give location of
-kernel build tree using KDIR environment variable.
+kernel build tree using KERNEL_SRC environment variable.
 It you are cross-compiling then define ARCH and CROSS\_COMPILE environment
 variable.
+The `KERNEL_SRC` directory must contain a `.config` and should be prepared with `make modules_prepare`.
 
 ```
-$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- KDIR=linux-headers-dir make
+$ ARCH=arm CROSS_COMPILE=arm-linux-gnueabihf- KERNEL_SRC=linux-headers-dir make
 ```
 
 Compiled kernel modules are located in al5r/al5r.ko
