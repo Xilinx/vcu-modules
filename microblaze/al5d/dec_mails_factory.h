@@ -7,9 +7,11 @@
 #ifndef _MCU_DEC_H_
 #define _MCU_DEC_H_
 
+#include <linux/types.h>
+
 #include "mcu_interface.h"
 #include "al_mail.h"
-#include "al_dec_ioctl.h"
+#include "al_uapi_dec_struct.h"
 
 void al5d_mail_get_status(struct al5_params *status, struct al5_mail *mail);
 void al5d_mail_get_sc_status(struct al5_scstatus *scstatus,

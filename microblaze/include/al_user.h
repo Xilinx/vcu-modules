@@ -10,7 +10,7 @@
 #include <linux/mutex.h>
 #include <linux/device.h>
 
-#include "al_ioctl.h"
+#include "al_uapi_codec_ioctl.h"
 #include "al_mail.h"
 #include "al_queue.h"
 #include "mcu_interface.h"

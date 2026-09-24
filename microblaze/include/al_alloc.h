@@ -8,7 +8,7 @@
 #define _AL_ALLOC_H_
 
 #include <linux/device.h>
-#include "al_ioctl.h"
+#include "al_uapi_codec_ioctl.h"
 
 struct al5_dma_buffer {
 	size_t size;

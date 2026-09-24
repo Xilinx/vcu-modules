@@ -7,8 +7,9 @@
 #ifndef _MCU_ENC_H_
 #define _MCU_ENC_H_
 
+#include <linux/types.h>
 #include "al_mail.h"
-#include "al_enc_ioctl.h"
+#include "al_uapi_enc_struct.h"
 #include "al_codec_mails.h"
 
 void al5e_mail_get_status(struct al5_params *status, struct al5_mail *mail);

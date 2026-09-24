@@ -1,12 +1,7 @@
-/******************************************************************************
-*
-* Copyright (C) 2026 Allegro DVT.  All rights reserved.
-*
-******************************************************************************/
-
 // SPDX-License-Identifier: GPL-2.0
 #ifndef DMAPROXY_IOCTL_H
 #define DMAPROXY_IOCTL_H
+
 #include <linux/ioctl.h>
 
 typedef struct dmaproxy_arg {

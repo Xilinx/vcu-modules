@@ -5,7 +5,7 @@
 ******************************************************************************/
 
 #include "al_user.h"
-#include "al_enc_ioctl.h"
+#include "al_uapi_enc_struct.h"
 
 int al5e_user_create_channel(struct al5_user *user,
 			     struct al5_config_channel *msg);

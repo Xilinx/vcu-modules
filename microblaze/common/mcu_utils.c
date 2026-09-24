@@ -8,8 +8,8 @@
 /* only 32 bits access are available on the apb */
 int memcpy_toio_32(void *pdst, const void *psrc, int size)
 {
-	const __u32 *src = psrc;
-	__u32 *dst = pdst;
+	const uint32_t *src = psrc;
+	uint32_t *dst = pdst;
 	int i;
 
 	for (i = 0; i < size / 4; ++i)
@@ -19,8 +19,8 @@ int memcpy_toio_32(void *pdst, const void *psrc, int size)
 
 int memcpy_fromio_32(void *pdst, void *psrc, int size)
 {
-	__u32 *src = psrc;
-	__u32 *dst = pdst;
+	uint32_t *src = psrc;
+	uint32_t *dst = pdst;
 	int i;
 
 	for (i = 0; i < size / 4; ++i)

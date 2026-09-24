@@ -7,7 +7,7 @@
 #include <linux/printk.h>
 
 #include "al_codec_mails.h"
-#include "al_ioctl.h"
+#include "al_uapi_codec_ioctl.h"
 #include "al_traces.h"
 
 const u32 uid_size = 4;

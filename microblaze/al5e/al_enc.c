@@ -34,7 +34,7 @@
 #include <linux/vmalloc.h>
 #include <linux/version.h>
 
-#include "al_enc_ioctl.h"
+#include "al_uapi_enc_ioctl.h"
 #include "al_alloc_ioctl.h"
 #include "al_vcu.h"
 #include "al_alloc.h"
