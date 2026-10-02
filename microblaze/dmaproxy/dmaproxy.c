@@ -107,21 +107,21 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 	dmaproxy_data->src_dbuf = dma_buf_get(dmaproxy.src_fd);
 	if (IS_ERR(dmaproxy_data->src_dbuf)) {
 		pr_err("dmaproxy: dma_buf_get failed for src\n");
-		goto fail_src_dbuf;
+		return -EINVAL;
 	}
 
 	dmaproxy_data->src_attach =
 		dma_buf_attach(dmaproxy_data->src_dbuf, dma_dev->dev);
 	if (IS_ERR(dmaproxy_data->src_attach)) {
 		pr_err("dmaproxy: dma_buf_attach get failed for src\n");
-		goto fail_src_attach;
+		goto err_put_src;
 	}
 
 	dmaproxy_data->src_sgt = dma_buf_map_attachment(
 		dmaproxy_data->src_attach, DMA_BIDIRECTIONAL);
 	if (IS_ERR(dmaproxy_data->src_sgt)) {
 		pr_err("dmaproxy: dma_buf_map get failed for src\n");
-		goto fail_src_map;
+		goto err_detach_src;
 	}
 
 	dmaproxy_data->src_buf = sg_dma_address(dmaproxy_data->src_sgt->sgl);
@@ -130,21 +130,21 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 		dmaproxy_data->dst_dbuf = dma_buf_get(dmaproxy.dst_fd);
 		if (IS_ERR(dmaproxy_data->dst_dbuf)) {
 			pr_err("dmaproxy: dma_buf_get failed for dst\n");
-			goto fail_dst_dbuf;
+			goto err_unmap_src;
 		}
 
 		dmaproxy_data->dst_attach =
 			dma_buf_attach(dmaproxy_data->dst_dbuf, dma_dev->dev);
 		if (IS_ERR(dmaproxy_data->dst_attach)) {
 			pr_err("dmaproxy: dma_buf_attach get failed for dst\n");
-			goto fail_dst_attach;
+			goto err_put_dst;
 		}
 
 		dmaproxy_data->dst_sgt = dma_buf_map_attachment(
 			dmaproxy_data->dst_attach, DMA_BIDIRECTIONAL);
 		if (IS_ERR(dmaproxy_data->dst_sgt)) {
 			pr_err("dmaproxy: dma_buf_map get failed for dst\n");
-			goto fail_dst_map;
+			goto err_detach_dst;
 		}
 
 		dmaproxy_data->dst_buf =
@@ -156,7 +156,7 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 	if (1 << align > dmaproxy.size) {
 		pr_err("dmaproxy: %lu-byte buffer too small for %d-byte alignment\n",
 		       dmaproxy.size, 1 << align);
-		goto fail_align;
+		goto err_align;
 	}
 
 	dmaproxy_data->src_buf = dmaproxy_data->src_buf + dmaproxy.src_offset;
@@ -171,25 +171,22 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 
 	return 0;
 
-fail_align:
+err_align:
 	if (dmaproxy.dst_fd == dmaproxy.src_fd)
-		goto fail_dst_dbuf;
-	else
-		dma_buf_unmap_attachment(dmaproxy_data->dst_attach,
-					 dmaproxy_data->dst_sgt,
-					 DMA_BIDIRECTIONAL);
-fail_dst_map:
+		goto err_unmap_src;
+	dma_buf_unmap_attachment(dmaproxy_data->dst_attach,
+				 dmaproxy_data->dst_sgt, DMA_BIDIRECTIONAL);
+err_detach_dst:
 	dma_buf_detach(dmaproxy_data->dst_dbuf, dmaproxy_data->dst_attach);
-fail_dst_attach:
+err_put_dst:
 	dma_buf_put(dmaproxy_data->dst_dbuf);
-fail_dst_dbuf:
+err_unmap_src:
 	dma_buf_unmap_attachment(dmaproxy_data->src_attach,
 				 dmaproxy_data->src_sgt, DMA_BIDIRECTIONAL);
-fail_src_map:
+err_detach_src:
 	dma_buf_detach(dmaproxy_data->src_dbuf, dmaproxy_data->src_attach);
-fail_src_attach:
+err_put_src:
 	dma_buf_put(dmaproxy_data->src_dbuf);
-fail_src_dbuf:
 	return -EINVAL;
 }
 
