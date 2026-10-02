@@ -117,7 +117,7 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 			      dmaproxy_arg_t dmaproxy)
 {
 	struct dma_device *dma_dev = dmaproxy_data->chan->device;
-	u8 align = 0;
+	dma_addr_t align_mask = (1UL << dma_dev->copy_align) - 1;
 
 	dmaproxy_data->src_dbuf = dma_buf_get(dmaproxy.src_fd);
 	if (IS_ERR(dmaproxy_data->src_dbuf)) {
@@ -207,22 +207,17 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 		dmaproxy_data->dst_buf = dmaproxy_data->src_buf;
 	}
 
-	align = dma_dev->copy_align;
-	if (1 << align > dmaproxy.size) {
-		pr_err("dmaproxy: %lu-byte buffer too small for %d-byte alignment\n",
-		       dmaproxy.size, 1 << align);
-		goto err_align;
-	}
-
 	dmaproxy_data->src_buf = dmaproxy_data->src_buf + dmaproxy.src_offset;
 	dmaproxy_data->dst_buf = dmaproxy_data->dst_buf + dmaproxy.dst_offset;
 
-	if (align)
-		dmaproxy_data->src_buf =
-			PTR_ALIGN(dmaproxy_data->src_buf, align);
-	if (align)
-		dmaproxy_data->dst_buf =
-			PTR_ALIGN(dmaproxy_data->dst_buf, align);
+	/* Reject a misaligned transfer instead of quietly relocating it: moving
+	 * the address would copy from or to the wrong place.
+	 */
+	if ((dmaproxy_data->src_buf | dmaproxy_data->dst_buf) & align_mask) {
+		pr_err("dmaproxy: transfer needs %llu-byte alignment\n",
+		       (unsigned long long)align_mask + 1);
+		goto err_align;
+	}
 
 	return 0;
 
