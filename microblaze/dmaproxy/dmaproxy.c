@@ -72,7 +72,7 @@ static int dmaproxy_open(struct inode *i, struct file *f)
 	dma_cap_mask_t mask;
 	struct dma_chan *chan;
 
-	dmaproxy_data = kmalloc(sizeof(*dmaproxy_data), GFP_KERNEL);
+	dmaproxy_data = kzalloc(sizeof(*dmaproxy_data), GFP_KERNEL);
 	if (!dmaproxy_data)
 		return -ENOMEM;
 
