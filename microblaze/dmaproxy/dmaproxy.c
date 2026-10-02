@@ -33,6 +33,11 @@ static struct cdev dmaproxy_cdev;
 static struct class *dmaproxy_cl;
 #define MINOR_CNT 8
 
+/* Upper bound on a single memcpy. The engine moves several hundred MB/s, so
+ * this only ever trips when the transfer is genuinely stuck.
+ */
+#define DMAPROXY_COPY_TIMEOUT_MS 5000
+
 struct dmacopy_done {
 	bool done;
 	wait_queue_head_t wait;
@@ -267,6 +272,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data,
 	enum dma_status status;
 	enum dma_ctrl_flags flags;
 	dma_cookie_t cookie;
+	long timeout;
 
 	chan = dmaproxy_data->chan;
 	dma_dev = dmaproxy_data->chan->device;
@@ -298,20 +304,21 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data,
 	}
 	dma_async_issue_pending(chan);
 
-	/*FIXME: Set some X ms of timeout here */
-	wait_event_timeout(dmaproxy_data->done.wait, dmaproxy_data->done.done,
-			   msecs_to_jiffies(-1));
-
-	status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
+	timeout = wait_event_timeout(dmaproxy_data->done.wait,
+				     dmaproxy_data->done.done,
+				     msecs_to_jiffies(DMAPROXY_COPY_TIMEOUT_MS));
 
 	/* The engine must be stopped before the caller drops its references to
 	 * the buffers, otherwise a late completion writes into freed memory.
 	 */
-	if (!dmaproxy_data->done.done) {
+	if (!timeout) {
 		pr_err("dmaproxy: timeout error while dma copy\n");
 		dmaengine_terminate_sync(chan);
 		return -ETIME;
-	} else if (status != DMA_COMPLETE) {
+	}
+
+	status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
+	if (status != DMA_COMPLETE) {
 		pr_err("dmaproxy: dma copy get failed\n");
 		dmaengine_terminate_sync(chan);
 		return -ECANCELED;
