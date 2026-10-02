@@ -304,11 +304,16 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data,
 
 	status = dma_async_is_tx_complete(chan, cookie, NULL, NULL);
 
+	/* The engine must be stopped before the caller drops its references to
+	 * the buffers, otherwise a late completion writes into freed memory.
+	 */
 	if (!dmaproxy_data->done.done) {
 		pr_err("dmaproxy: timeout error while dma copy\n");
+		dmaengine_terminate_sync(chan);
 		return -ETIME;
 	} else if (status != DMA_COMPLETE) {
 		pr_err("dmaproxy: dma copy get failed\n");
+		dmaengine_terminate_sync(chan);
 		return -ECANCELED;
 	}
 
