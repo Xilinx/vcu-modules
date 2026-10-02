@@ -216,51 +216,26 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data,
 	struct dma_device *dma_dev;
 	struct dma_chan *chan;
 	struct dma_async_tx_descriptor *tx = NULL;
-	struct dmaengine_unmap_data *um = NULL;
 	enum dma_status status;
 	enum dma_ctrl_flags flags;
 	dma_cookie_t cookie;
-	int ret = 0;
 
 	chan = dmaproxy_data->chan;
 	dma_dev = dmaproxy_data->chan->device;
 
-	um = dmaengine_get_unmap_data(dma_dev->dev, 2, GFP_KERNEL);
-	if (!um) {
-		pr_err("dmaproxy: dmaengine get unmap data failed\n");
-		return -ENOMEM;
-	}
-	um->len = dmaproxy.size;
-
-	um->addr[0] = dma_map_page(dma_dev->dev,
-				   phys_to_page(dmaproxy_data->src_buf),
-				   offset_in_page(dmaproxy_data->src_buf),
-				   um->len, DMA_TO_DEVICE);
-	ret = dma_mapping_error(dma_dev->dev, um->addr[0]);
-	if (ret) {
-		pr_err("dmaproxy: dma map error for source buffer\n");
-		goto exit;
-	}
-	um->to_cnt++;
-
-	um->addr[1] = dma_map_page(dma_dev->dev,
-				   phys_to_page(dmaproxy_data->dst_buf),
-				   offset_in_page(dmaproxy_data->dst_buf),
-				   um->len, DMA_TO_DEVICE);
-	ret = dma_mapping_error(dma_dev->dev, um->addr[1]);
-	if (ret) {
-		pr_err("dmaproxy: dma map error for destination buffer\n");
-		goto exit;
-	}
-	um->bidi_cnt++;
-
+	/* src_buf/dst_buf are dma addresses produced by dma_buf_map_attachment()
+	 * for this engine's device, so they are programmed as-is. They must not
+	 * be handed to phys_to_page()/dma_map_page(): a dma address is not a
+	 * physical address, the buffers are already mapped, and coherent memory
+	 * may have no struct page or linear mapping at all.
+	 */
 	flags = DMA_CTRL_ACK | DMA_PREP_INTERRUPT;
-	tx = dma_dev->device_prep_dma_memcpy(chan, um->addr[1], um->addr[0],
-					     um->len, flags);
+	tx = dma_dev->device_prep_dma_memcpy(chan, dmaproxy_data->dst_buf,
+					     dmaproxy_data->src_buf,
+					     dmaproxy.size, flags);
 	if (!tx) {
 		pr_err("dmaproxy: device prep for dma memcpy get failed\n");
-		ret = -ECANCELED;
-		goto exit;
+		return -ECANCELED;
 	}
 
 	dmaproxy_data->done.done = false;
@@ -271,8 +246,7 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data,
 
 	if (dma_submit_error(cookie)) {
 		pr_err("dmaproxy: dma submit error\n");
-		ret = -ECANCELED;
-		goto exit;
+		return -ECANCELED;
 	}
 	dma_async_issue_pending(chan);
 
@@ -284,17 +258,13 @@ static int perform_dma_copy(struct dmaproxy_data *dmaproxy_data,
 
 	if (!dmaproxy_data->done.done) {
 		pr_err("dmaproxy: timeout error while dma copy\n");
-		ret = -ETIME;
-		goto exit;
+		return -ETIME;
 	} else if (status != DMA_COMPLETE) {
 		pr_err("dmaproxy: dma copy get failed\n");
-		ret = -ECANCELED;
-		goto exit;
+		return -ECANCELED;
 	}
 
-exit:
-	dmaengine_unmap_put(um);
-	return ret;
+	return 0;
 }
 
 static long dmaproxy_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
