@@ -98,6 +98,21 @@ static int dmaproxy_close(struct inode *i, struct file *f)
 	return 0;
 }
 
+/* Check that [offset, offset + size) lies inside the dma_buf. The engine has
+ * no notion of the buffer bounds, so anything not rejected here is programmed
+ * into the hardware as-is.
+ */
+static int dmabuf_check_range(struct dma_buf *dbuf, int offset, size_t size)
+{
+	if (offset < 0 || size == 0 || size > dbuf->size)
+		return -EINVAL;
+
+	if ((size_t)offset > dbuf->size - size)
+		return -EINVAL;
+
+	return 0;
+}
+
 static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 			      dmaproxy_arg_t dmaproxy)
 {
@@ -108,6 +123,14 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 	if (IS_ERR(dmaproxy_data->src_dbuf)) {
 		pr_err("dmaproxy: dma_buf_get failed for src\n");
 		return -EINVAL;
+	}
+
+	if (dmabuf_check_range(dmaproxy_data->src_dbuf, dmaproxy.src_offset,
+			       dmaproxy.size)) {
+		pr_err("dmaproxy: src range [%d, +%zu) outside %zu-byte buffer\n",
+		       dmaproxy.src_offset, dmaproxy.size,
+		       dmaproxy_data->src_dbuf->size);
+		goto err_put_src;
 	}
 
 	dmaproxy_data->src_attach =
@@ -133,6 +156,14 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 			goto err_unmap_src;
 		}
 
+		if (dmabuf_check_range(dmaproxy_data->dst_dbuf,
+				       dmaproxy.dst_offset, dmaproxy.size)) {
+			pr_err("dmaproxy: dst range [%d, +%zu) outside %zu-byte buffer\n",
+			       dmaproxy.dst_offset, dmaproxy.size,
+			       dmaproxy_data->dst_dbuf->size);
+			goto err_put_dst;
+		}
+
 		dmaproxy_data->dst_attach =
 			dma_buf_attach(dmaproxy_data->dst_dbuf, dma_dev->dev);
 		if (IS_ERR(dmaproxy_data->dst_attach)) {
@@ -149,8 +180,17 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 
 		dmaproxy_data->dst_buf =
 			sg_dma_address(dmaproxy_data->dst_sgt->sgl);
-	} else
+	} else {
+		if (dmabuf_check_range(dmaproxy_data->src_dbuf,
+				       dmaproxy.dst_offset, dmaproxy.size)) {
+			pr_err("dmaproxy: dst range [%d, +%zu) outside %zu-byte buffer\n",
+			       dmaproxy.dst_offset, dmaproxy.size,
+			       dmaproxy_data->src_dbuf->size);
+			goto err_unmap_src;
+		}
+
 		dmaproxy_data->dst_buf = dmaproxy_data->src_buf;
+	}
 
 	align = dma_dev->copy_align;
 	if (1 << align > dmaproxy.size) {
