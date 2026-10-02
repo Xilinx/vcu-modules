@@ -147,6 +147,15 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 		goto err_detach_src;
 	}
 
+	/* Only the first scatterlist entry is programmed, so the buffer has to
+	 * be contiguous in the engine's address space.
+	 */
+	if (dmaproxy_data->src_sgt->nents != 1) {
+		pr_err("dmaproxy: src buffer is not contiguous (%u entries)\n",
+		       dmaproxy_data->src_sgt->nents);
+		goto err_unmap_src;
+	}
+
 	dmaproxy_data->src_buf = sg_dma_address(dmaproxy_data->src_sgt->sgl);
 
 	if (dmaproxy.dst_fd != dmaproxy.src_fd) {
@@ -176,6 +185,12 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 		if (IS_ERR(dmaproxy_data->dst_sgt)) {
 			pr_err("dmaproxy: dma_buf_map get failed for dst\n");
 			goto err_detach_dst;
+		}
+
+		if (dmaproxy_data->dst_sgt->nents != 1) {
+			pr_err("dmaproxy: dst buffer is not contiguous (%u entries)\n",
+			       dmaproxy_data->dst_sgt->nents);
+			goto err_unmap_dst;
 		}
 
 		dmaproxy_data->dst_buf =
@@ -214,6 +229,7 @@ static int dmabuf_get_address(struct dmaproxy_data *dmaproxy_data,
 err_align:
 	if (dmaproxy.dst_fd == dmaproxy.src_fd)
 		goto err_unmap_src;
+err_unmap_dst:
 	dma_buf_unmap_attachment(dmaproxy_data->dst_attach,
 				 dmaproxy_data->dst_sgt, DMA_BIDIRECTIONAL);
 err_detach_dst:
