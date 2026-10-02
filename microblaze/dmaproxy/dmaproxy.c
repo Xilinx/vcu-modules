@@ -45,6 +45,8 @@ struct dmacopy_done {
 
 struct dmaproxy_data {
 	struct dma_chan *chan;
+	/* serialises DMAPROXY_COPY against the per-file transfer state below */
+	struct mutex lock;
 	struct dma_buf *src_dbuf;
 	struct dma_buf_attachment *src_attach;
 	struct sg_table *src_sgt;
@@ -73,6 +75,8 @@ static int dmaproxy_open(struct inode *i, struct file *f)
 	dmaproxy_data = kmalloc(sizeof(*dmaproxy_data), GFP_KERNEL);
 	if (!dmaproxy_data)
 		return -ENOMEM;
+
+	mutex_init(&dmaproxy_data->lock);
 
 	dma_cap_zero(mask);
 	dma_cap_set(DMA_MEMCPY, mask);
@@ -341,12 +345,21 @@ static long dmaproxy_ioctl(struct file *f, unsigned int cmd, unsigned long arg)
 			return -EFAULT;
 		}
 
-		if (dmabuf_get_address(dmaproxy_data, dmaproxy))
+		/* The transfer state lives in dmaproxy_data and the channel
+		 * takes one descriptor at a time, so threads sharing this file
+		 * must not overlap.
+		 */
+		mutex_lock(&dmaproxy_data->lock);
+
+		if (dmabuf_get_address(dmaproxy_data, dmaproxy)) {
+			mutex_unlock(&dmaproxy_data->lock);
 			return -EINVAL;
+		}
 
 		ret = perform_dma_copy(dmaproxy_data, dmaproxy);
 
 		dmabuf_cleanup(dmaproxy_data, dmaproxy);
+		mutex_unlock(&dmaproxy_data->lock);
 		break;
 	}
 
